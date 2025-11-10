@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title><%= product ? 'Sorte bearbeiten' : 'Neue Sorte' %> – Medizinisches Cannabis</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <div class="top-row">
+        <img src="/images/wanncannabis-logo-animated.svg" alt="WannCannaBis Logo" class="logo" />
+        <span class="title">Medizinisches Cannabis – Admin</span>
+      </div>
+      <span class="subtitle">Ein Unternehmen von WannCannaBis</span>
+    </div>
+    <nav>
+      <a href="/admin" class="nav-link">Dashboard</a>
+      <a href="/admin/products" class="nav-link">Sorten verwalten</a>
+      <a href="/logout" class="nav-link">Logout</a>
+    </nav>
+  </header>
+  <main class="container">
+    <div class="card form-card">
+      <h2><%= product ? 'Sorte bearbeiten' : 'Neue Sorte' %></h2>
+      <% if (errors && errors.length > 0) { %>
+        <ul class="error-list">
+          <% errors.forEach(function(e) { %>
+            <li><%= e.msg %></li>
+          <% }); %>
+        </ul>
+      <% } %>
+      <form method="post" action="<%= product ? ('/admin/products/' + product.id + '/edit') : '/admin/products/new' %>" class="form" enctype="multipart/form-data">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <!-- Grundinformationen -->
+        <div class="form-section">
+          <h3>Grundinformationen</h3>
+          <div class="form-group">
+            <label for="title">Name</label>
+            <input type="text" id="title" name="title" value="<%= product ? product.title : '' %>" required />
+          </div>
+          <div class="form-group">
+            <label for="price">Preis (€)</label>
+            <input type="number" step="0.01" id="price" name="price" value="<%= product ? product.price : '' %>" required />
+          </div>
+          <div class="form-group">
+            <label for="imageFile">Bild hochladen</label>
+            <input type="file" id="imageFile" name="imageFile" accept="image/*" />
+            <% if (product && product.image) { %>
+              <div style="margin-top:0.5rem;">
+                <label>Aktuelles Bild:</label><br/>
+                <img src="/images/<%= product.image %>" alt="Aktuelles Bild" class="form-preview" />
+              </div>
+            <% } %>
+          </div>
+        </div>
+
+        <!-- Beschreibung -->
+        <div class="form-section">
+          <h3>Beschreibung</h3>
+          <div class="form-group">
+            <textarea id="description" name="description" rows="4" placeholder="Beschreibe die Sorte" required><%= product ? product.description : '' %></textarea>
+          </div>
+        </div>
+
+        <!-- Inhaltsstoffe -->
+        <div class="form-section">
+          <h3>Inhaltsstoffe</h3>
+          <div class="form-group">
+            <label for="thc">THC (%)</label>
+            <input type="text" id="thc" name="thc" value="<%= product && product.thc ? product.thc : '' %>" placeholder="z.B. 27%" />
+          </div>
+          <div class="form-group">
+            <label for="cbd">CBD (%)</label>
+            <input type="text" id="cbd" name="cbd" value="<%= product && product.cbd ? product.cbd : '' %>" placeholder="z.B. <1%" />
+          </div>
+        </div>
+
+        <!-- Effekte -->
+        <div class="form-section">
+          <h3>Effekte</h3>
+          <div class="form-group">
+            <label for="effects">Effekte (Kommagetrennt)</label>
+            <input type="text" id="effects" name="effects" value="<%= product && product.effects ? product.effects : '' %>" placeholder="z.B. Reduziert Schmerzen, Belebt" />
+          </div>
+        </div>
+
+        <!-- Aroma und Geschmack -->
+        <div class="form-section">
+          <h3>Aroma &amp; Geschmack</h3>
+          <div class="form-group">
+            <label for="aroma">Aroma/Geschmack (Kommagetrennt)</label>
+            <input type="text" id="aroma" name="aroma" value="<%= product && product.aroma ? product.aroma : '' %>" placeholder="z.B. Fruchtig, Blumig" />
+          </div>
+        </div>
+
+        <!-- Terpene -->
+        <div class="form-section">
+          <h3>Terpene</h3>
+          <div class="form-group">
+            <label for="terpenes">Terpene (Kommagetrennt)</label>
+            <input type="text" id="terpenes" name="terpenes" value="<%= product && product.terpenes ? product.terpenes : '' %>" placeholder="z.B. Beta-Myrcen, Alpha-Humulen" />
+          </div>
+        </div>
+
+        <button type="submit" class="btn">Speichern</button>
+        <a href="/admin/products" class="btn back-btn">Abbrechen</a>
+      </form>
+    </div>
+    <div style="margin-top: 1rem; text-align:center;">
+      <a href="/admin/products" class="btn back-btn">Zurück</a>
+      <a href="/showroom" class="btn home-btn">Home</a>
+    </div>
+  </main>
+
+  <!-- Qualitätssiegel im unteren Bereich -->
+  <footer class="footer">
+    <img src="/images/HOOD339_Qualitaetssiegel_silber.svg" alt="Qualitätssiegel" class="seal" />
+  </footer>
+
+</body>
+</html>

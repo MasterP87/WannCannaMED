@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Registrieren – Medizinisches Cannabis</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <div class="top-row">
+        <img src="/images/wanncannabis-logo-animated.svg" alt="WannCannaBis Logo" class="logo" />
+        <span class="title">Medizinisches Cannabis</span>
+      </div>
+      <span class="subtitle">Ein Unternehmen von WannCannaBis</span>
+    </div>
+    <nav>
+      <a href="/login" class="nav-link">Login</a>
+      <a href="/register" class="nav-link">Registrieren</a>
+    </nav>
+  </header>
+  <main class="container">
+    <div class="card form-card">
+      <h2>Registrierung</h2>
+      <% if (errors && errors.length > 0) { %>
+        <ul class="error-list">
+          <% errors.forEach(function(e) { %>
+            <li><%= e.msg %></li>
+          <% }); %>
+        </ul>
+      <% } %>
+      <form method="post" action="/register" class="form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <div class="form-group">
+          <label for="email">Benutzername/E-Mail</label>
+          <input type="text" id="email" name="email" required />
+        </div>
+        <div class="form-group">
+          <label for="password">Passwort</label>
+          <input type="password" id="password" name="password" required />
+        </div>
+        <div class="form-group">
+          <label for="confirm_password">Passwort bestätigen</label>
+          <input type="password" id="confirm_password" name="confirm_password" required />
+        </div>
+        <button type="submit" class="btn">Registrieren</button>
+      </form>
+      <p class="alternate">Bereits registriert? <a href="/login">Anmelden</a></p>
+    </div>
+  </main>
+
+  <!-- Qualitätssiegel im unteren Bereich -->
+  <footer class="footer">
+    <img src="/images/HOOD339_Qualitaetssiegel_silber.svg" alt="Qualitätssiegel" class="seal" />
+  </footer>
+</body>
+</html>

@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sorten verwalten – Medizinisches Cannabis</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <div class="top-row">
+        <img src="/images/wanncannabis-logo-animated.svg" alt="WannCannaBis Logo" class="logo" />
+        <span class="title">Medizinisches Cannabis – Admin</span>
+      </div>
+      <span class="subtitle">Ein Unternehmen von WannCannaBis</span>
+    </div>
+    <nav>
+      <a href="/admin" class="nav-link">Dashboard</a>
+      <a href="/admin/products" class="nav-link">Sorten verwalten</a>
+      <a href="/logout" class="nav-link">Logout</a>
+    </nav>
+  </header>
+  <main class="container">
+    <div class="card">
+      <h2>Sorten verwalten</h2>
+      <% if (error) { %>
+        <p class="error-message"><%= error %></p>
+      <% } %>
+      <div style="margin-bottom: 1rem;">
+        <a href="/admin/products/new" class="btn small">Neue Sorte</a>
+      </div>
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Name</th>
+            <th>Preis (€)</th>
+            <th>Aktionen</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% products.forEach(function(prod) { %>
+            <tr>
+              <td><%= prod.id %></td>
+              <td><%= prod.title %></td>
+              <td><%= prod.price.toFixed(2) %></td>
+              <td>
+                <a href="/admin/products/<%= prod.id %>" class="btn small">Details</a>
+                <a href="/admin/products/<%= prod.id %>/edit" class="btn small">Bearbeiten</a>
+                <form method="post" action="/admin/products/<%= prod.id %>/delete" style="display:inline-block;">
+                  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                  <button type="submit" class="btn small" onclick="return confirm('Soll die Sorte wirklich gelöscht werden?');">Löschen</button>
+                </form>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top: 1rem;">
+      <a href="/admin" class="btn back-btn">Zurück</a>
+      <a href="/showroom" class="btn home-btn">Home</a>
+    </div>
+  </main>
+
+  <!-- Qualitätssiegel im unteren Bereich -->
+  <footer class="footer">
+    <img src="/images/HOOD339_Qualitaetssiegel_silber.svg" alt="Qualitätssiegel" class="seal" />
+  </footer>
+</body>
+</html>

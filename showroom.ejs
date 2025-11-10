@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Showroom – Medizinisches Cannabis</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <div class="top-row">
+        <img src="/images/wanncannabis-logo-animated.svg" alt="WannCannaBis Logo" class="logo" />
+        <span class="title">Medizinisches Cannabis</span>
+      </div>
+      <span class="subtitle">Ein Unternehmen von WannCannaBis</span>
+    </div>
+    <nav>
+      <a href="/showroom" class="nav-link">Showroom</a>
+      <a href="/logout" class="nav-link">Logout</a>
+    </nav>
+  </header>
+  <main class="container">
+    <div class="products-grid">
+      <% if (error) { %>
+        <p class="error-message"><%= error %></p>
+      <% } %>
+      <% products.forEach(function(p) { %>
+        <div class="product-card">
+          <img src="/images/<%= p.image %>" alt="<%= p.title %>" class="product-image" />
+          <h3><%= p.title %></h3>
+          <p class="description"><%= p.description %></p>
+          <p class="price"><%= p.price.toFixed(2) %>€</p>
+        </div>
+      <% }); %>
+    </div>
+  </main>
+
+  <!-- Qualitätssiegel im unteren Bereich -->
+  <footer class="footer">
+    <img src="/images/HOOD339_Qualitaetssiegel_silber.svg" alt="Qualitätssiegel" class="seal" />
+  </footer>
+</body>
+</html>

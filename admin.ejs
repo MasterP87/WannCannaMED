@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Adminbereich – Medizinisches Cannabis</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <div class="top-row">
+        <img src="/images/wanncannabis-logo-animated.svg" alt="WannCannaBis Logo" class="logo" />
+        <span class="title">Medizinisches Cannabis – Admin</span>
+      </div>
+      <span class="subtitle">Ein Unternehmen von WannCannaBis</span>
+    </div>
+    <nav>
+      <a href="/admin" class="nav-link">Dashboard</a>
+      <a href="/admin/products" class="nav-link">Sorten verwalten</a>
+      <a href="/logout" class="nav-link">Logout</a>
+    </nav>
+  </header>
+  <main class="container">
+    <div class="card">
+      <h2>Benutzerverwaltung</h2>
+      <% if (error) { %>
+        <p class="error-message"><%= error %></p>
+      <% } %>
+      <table class="user-table">
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>E-Mail</th>
+            <th>Admin</th>
+            <th>Freigegeben</th>
+            <th>Aktion</th>
+          </tr>
+        </thead>
+        <tbody>
+          <% users.forEach(function(u) { %>
+            <tr>
+              <td><%= u.id %></td>
+              <td><%= u.email %></td>
+              <td><%= u.is_admin ? 'Ja' : 'Nein' %></td>
+              <td><%= u.approved ? 'Ja' : 'Nein' %></td>
+              <td>
+                <% if (!u.is_admin && !u.approved) { %>
+                  <form method="post" action="/admin/approve/<%= u.id %>">
+                    <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                    <button type="submit" class="btn small">Freigeben</button>
+                  </form>
+                <% } %>
+              </td>
+            </tr>
+          <% }); %>
+        </tbody>
+      </table>
+    </div>
+    <div style="margin-top: 1rem;">
+      <a href="/showroom" class="btn back-btn">Zurück</a>
+      <a href="/showroom" class="btn home-btn">Home</a>
+    </div>
+  </main>
+
+  <!-- Qualitätssiegel im unteren Bereich -->
+  <footer class="footer">
+    <img src="/images/HOOD339_Qualitaetssiegel_silber.svg" alt="Qualitätssiegel" class="seal" />
+  </footer>
+</body>
+</html>

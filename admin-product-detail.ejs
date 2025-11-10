@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <title>Sorte – <%= product.title %> – Medizinisches Cannabis</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <div class="top-row">
+        <img src="/images/wanncannabis-logo-animated.svg" alt="WannCannaBis Logo" class="logo" />
+        <span class="title">Medizinisches Cannabis – Admin</span>
+      </div>
+      <span class="subtitle">Ein Unternehmen von WannCannaBis</span>
+    </div>
+    <nav>
+      <a href="/admin" class="nav-link">Dashboard</a>
+      <a href="/admin/products" class="nav-link">Sorten verwalten</a>
+      <a href="/logout" class="nav-link">Logout</a>
+    </nav>
+  </header>
+  <main class="container">
+    <div class="card product-detail-card">
+      <div class="product-detail-header">
+        <div class="product-detail-image">
+          <img src="/images/<%= product.image %>" alt="<%= product.title %>" class="product-image" />
+        </div>
+        <div class="product-detail-info">
+          <h2 style="margin-top:0"><%= product.title %></h2>
+          <p><strong>Preis:</strong> <%= product.price.toFixed(2) %>€</p>
+          <% if (product.thc || product.cbd) { %>
+            <p><strong>THC/CBD:</strong> 
+              <% if (product.thc) { %><%= product.thc %><% } else { %>–<% } %> / 
+              <% if (product.cbd) { %><%= product.cbd %><% } else { %>–<% } %>
+            </p>
+          <% } %>
+          <!-- Action buttons for editing and deleting -->
+          <div style="margin-top: 0.8rem;">
+            <a href="/admin/products/<%= product.id %>/edit" class="btn small">Bearbeiten</a>
+            <form method="post" action="/admin/products/<%= product.id %>/delete" style="display:inline-block;">
+              <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+              <button type="submit" class="btn small" onclick="return confirm('Soll die Sorte wirklich gelöscht werden?');">Löschen</button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="product-detail-body">
+        <h3>Beschreibung</h3>
+        <p><%= product.description %></p>
+        <% if (product.effects) { %>
+          <h3>Effekte</h3>
+          <div>
+            <% product.effects.split(/,\s*/).forEach(function(eff) { if (eff) { %>
+              <span class="tag"><%= eff %></span>
+            <% } }); %>
+          </div>
+        <% } %>
+        <% if (product.aroma) { %>
+          <h3>Aroma &amp; Geschmack</h3>
+          <div>
+            <% product.aroma.split(/,\s*/).forEach(function(ar) { if (ar) { %>
+              <span class="tag"><%= ar %></span>
+            <% } }); %>
+          </div>
+        <% } %>
+        <% if (product.terpenes) { %>
+          <h3>Terpene</h3>
+          <div>
+            <% product.terpenes.split(/,\s*/).forEach(function(tp) { if (tp) { %>
+              <span class="tag"><%= tp %></span>
+            <% } }); %>
+          </div>
+        <% } %>
+      </div>
+    </div>
+    <div style="margin-top: 1rem;">
+      <a href="/admin/products" class="btn back-btn">Zurück</a>
+      <a href="/showroom" class="btn home-btn">Home</a>
+    </div>
+  </main>
+
+  <!-- Qualitätssiegel im unteren Bereich -->
+  <footer class="footer">
+    <img src="/images/HOOD339_Qualitaetssiegel_silber.svg" alt="Qualitätssiegel" class="seal" />
+  </footer>
+</body>
+</html>
