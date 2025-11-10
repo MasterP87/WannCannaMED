@@ -7,6 +7,7 @@ const csrf = require('csurf');
 const helmet = require('helmet');
 const sqlite3 = require('sqlite3').verbose();
 const path = require('path');
+const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -16,6 +17,22 @@ const PORT = process.env.PORT || 3000;
 // doesn't exist it will be created automatically.
 const dbPath = path.join(__dirname, 'data.db');
 const db = new sqlite3.Database(dbPath);
+
+// Configure file upload for product images using multer. Images are stored
+// in the public/images directory. Filenames are generated uniquely to
+// avoid collisions. Only basic filtering is done here; additional
+// validation can be added if necessary.
+const imageStorage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, path.join(__dirname, 'public/images'));
+  },
+  filename: (req, file, cb) => {
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const unique = Date.now() + '-' + Math.round(Math.random() * 1e9);
+    cb(null, unique + ext);
+  }
+});
+const upload = multer({ storage: imageStorage });
 
 // Create tables if they do not exist. Using SERIALIZE ensures the
 // statements run sequentially.
@@ -348,23 +365,19 @@ app.get('/admin/products/new', requireAdmin, (req, res) => {
 });
 
 // Create new product
-app.post('/admin/products/new', requireAdmin, (req, res) => {
+app.post('/admin/products/new', requireAdmin, upload.single('imageFile'), (req, res) => {
   /*
    * Extract form values for a new product. In addition to the basic fields
-   * (title, description, price, image), we also support optional
-   * metadata fields for THC, CBD, effects, aroma and terpenes. These
-   * values are stored as plain text in the database so that admins can
-   * enter comma‑separated lists or descriptive strings. Empty strings
-   * are used when the fields are not provided.  All inputs are
-   * validated for presence where required and price is converted to a
-   * floating number.  Invalid input results in the form being
-   * re‑rendered with error messages.
+   * (title, description, price), we support optional metadata fields for
+   * THC, CBD, effects, aroma and terpenes. Images can be uploaded via
+   * multipart/form-data; if no file is uploaded, the placeholder image
+   * is used. All inputs are validated and errors result in the form
+   * being re-rendered.
    */
   const {
     title,
     description,
     price,
-    image,
     thc,
     cbd,
     effects,
@@ -382,7 +395,11 @@ app.post('/admin/products/new', requireAdmin, (req, res) => {
   if (errors.length > 0) {
     return res.render('admin-product-form', { product: null, errors });
   }
-  const imageFile = image && image.trim() !== '' ? image.trim() : 'placeholder.png';
+  // Determine file name: use uploaded file if present, otherwise fallback to placeholder
+  let imageFile = 'placeholder.png';
+  if (req.file && req.file.filename) {
+    imageFile = req.file.filename;
+  }
   // Provide default values for optional metadata
   const meta = {
     thc: thc ? thc.trim() : '',
@@ -439,13 +456,12 @@ app.get('/admin/products/:id/edit', requireAdmin, (req, res) => {
 });
 
 // Update product
-app.post('/admin/products/:id/edit', requireAdmin, (req, res) => {
+app.post('/admin/products/:id/edit', requireAdmin, upload.single('imageFile'), (req, res) => {
   const id = req.params.id;
   const {
     title,
     description,
     price,
-    image,
     thc,
     cbd,
     effects,
@@ -477,7 +493,6 @@ app.post('/admin/products/:id/edit', requireAdmin, (req, res) => {
       errors
     });
   }
-  const imageFile = image && image.trim() !== '' ? image.trim() : 'placeholder.png';
   // Prepare metadata with defaults
   const meta = {
     thc: thc ? thc.trim() : '',
@@ -486,41 +501,56 @@ app.post('/admin/products/:id/edit', requireAdmin, (req, res) => {
     aroma: aroma ? aroma.trim() : '',
     terpenes: terpenes ? terpenes.trim() : ''
   };
-  db.run(
-    'UPDATE products SET title = ?, description = ?, price = ?, image = ?, thc = ?, cbd = ?, effects = ?, aroma = ?, terpenes = ? WHERE id = ?',
-    [
-      title.trim(),
-      description.trim(),
-      numericPrice,
-      imageFile,
-      meta.thc,
-      meta.cbd,
-      meta.effects,
-      meta.aroma,
-      meta.terpenes,
-      id
-    ],
-    err => {
-      if (err) {
-        return res.render('admin-product-form', {
-          product: {
-            id,
-            title,
-            description,
-            price,
-            image,
-            thc,
-            cbd,
-            effects,
-            aroma,
-            terpenes
-          },
-          errors: [{ msg: 'Fehler beim Aktualisieren der Sorte.' }]
-        });
-      }
-      res.redirect('/admin/products');
+  // Determine file name: if a new file is uploaded, use it; otherwise fall back to existing image name passed in hidden input
+  let newImage = null;
+  if (req.file && req.file.filename) {
+    newImage = req.file.filename;
+  }
+  // Retrieve current image from DB if we need to keep it
+  db.get('SELECT image FROM products WHERE id = ?', [id], (imgErr, row) => {
+    if (imgErr || !row) {
+      return res.render('admin-product-form', {
+        product: { id, title, description, price, image: row ? row.image : '', thc, cbd, effects, aroma, terpenes },
+        errors: [{ msg: 'Fehler beim Laden der bestehenden Sorte.' }]
+      });
     }
-  );
+    const imageFile = newImage || row.image;
+    db.run(
+      'UPDATE products SET title = ?, description = ?, price = ?, image = ?, thc = ?, cbd = ?, effects = ?, aroma = ?, terpenes = ? WHERE id = ?',
+      [
+        title.trim(),
+        description.trim(),
+        numericPrice,
+        imageFile,
+        meta.thc,
+        meta.cbd,
+        meta.effects,
+        meta.aroma,
+        meta.terpenes,
+        id
+      ],
+      err2 => {
+        if (err2) {
+          return res.render('admin-product-form', {
+            product: {
+              id,
+              title,
+              description,
+              price,
+              image: imageFile,
+              thc,
+              cbd,
+              effects,
+              aroma,
+              terpenes
+            },
+            errors: [{ msg: 'Fehler beim Aktualisieren der Sorte.' }]
+          });
+        }
+        res.redirect('/admin/products');
+      }
+    );
+  });
 });
 
 // Delete product
