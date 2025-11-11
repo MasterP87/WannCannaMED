@@ -171,6 +171,8 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(helmet());
 
+app.use('/images', express.static(__dirname));
+
 // Configure session management. Sessions are persisted in a SQLite
 // database to survive application restarts.
 app.use(
