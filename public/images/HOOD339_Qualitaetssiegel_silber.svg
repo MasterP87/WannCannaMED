@@ -1,0 +1,132 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="900" height="900" viewBox="0 0 900 900">
+  <defs>
+    <linearGradient id="metal-silver" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%"   stop-color="#bfc4c8"/>
+      <stop offset="12%"  stop-color="#f9fbfc"/>
+      <stop offset="25%"  stop-color="#a9afb6"/>
+      <stop offset="37%"  stop-color="#ffffff"/>
+      <stop offset="50%"  stop-color="#8e949b"/>
+      <stop offset="63%"  stop-color="#ffffff"/>
+      <stop offset="75%"  stop-color="#a9afb6"/>
+      <stop offset="88%"  stop-color="#f5f7f9"/>
+      <stop offset="100%" stop-color="#c6ccd0"/>
+    </linearGradient>
+    <radialGradient id="gloss" cx="35%" cy="25%" r="70%">
+      <stop offset="0%" stop-color="rgba(255,255,255,0.95)"/>
+      <stop offset="30%" stop-color="rgba(255,255,255,0.35)"/>
+      <stop offset="60%" stop-color="rgba(255,255,255,0.05)"/>
+      <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+    </radialGradient>
+    <filter id="emboss" x="-20%" y="-20%" width="140%" height="140%">
+      <feGaussianBlur in="SourceAlpha" stdDeviation="2" result="blur"/>
+      <feSpecularLighting in="blur" surfaceScale="6" specularConstant="0.65" specularExponent="25" lighting-color="#ffffff" result="spec">
+        <fePointLight x="-200" y="-300" z="200"/>
+      </feSpecularLighting>
+      <feComposite in="spec" in2="SourceAlpha" operator="in" result="specOut"/>
+      <feComposite in="SourceGraphic" in2="specOut" operator="arithmetic" k1="0" k2="1" k3="1" k4="0"/>
+    </filter>
+    <filter id="innerShadow" x="-50%" y="-50%" width="200%" height="200%">
+      <feOffset dx="0" dy="2"/>
+      <feGaussianBlur stdDeviation="4" result="offset-blur"/>
+      <feComposite operator="out" in="SourceGraphic" in2="offset-blur" result="inverse"/>
+      <feFlood flood-color="#000000" flood-opacity="0.35" result="color"/>
+      <feComposite operator="in" in="color" in2="inverse" result="shadow"/>
+      <feComposite operator="over" in="shadow" in2="SourceGraphic"/>
+    </filter>
+    <linearGradient id="rib" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#e5e7ea"/>
+      <stop offset="100%" stop-color="#9da3aa"/>
+    </linearGradient>
+    <path id="topArc" d="M 150,450 A 300,300 0 0 1 750,450" fill="none"/>
+    <path id="bottomArc" d="M 750,450 A 300,300 0 0 1 150,450" fill="none"/>
+    <pattern id="guilloche" patternUnits="userSpaceOnUse" width="20" height="20">
+      <path d="M0,10 Q10,0 20,10 T40,10" stroke="#d8dde2" stroke-width="0.6" fill="none" opacity="0.35"/>
+      <path d="M0,10 Q10,20 20,10 T40,10" stroke="#aeb5bc" stroke-width="0.6" fill="none" opacity="0.25"/>
+    </pattern>
+  </defs>
+
+  <g transform="translate(450,450)">
+    <g transform="translate(0,320)">
+      <path d="M-180,0 L-110,0 L-110,150 L-145,120 L-180,150 Z" fill="url(#rib)" filter="url(#emboss)"/>
+      <path d="M110,0 L180,0 L180,150 L145,120 L110,150 Z" fill="url(#rib)" filter="url(#emboss)"/>
+    </g>
+
+    <g id="scallop">
+      <circle r="330" fill="url(#metal-silver)" stroke="#6e7580" stroke-width="3"/>
+      <g>
+          <circle cx="780.00" cy="450.00" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="777.18" cy="493.07" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="768.76" cy="535.41" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="754.88" cy="576.29" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="735.79" cy="615.00" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="711.81" cy="650.89" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="683.35" cy="683.35" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="650.89" cy="711.81" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="615.00" cy="735.79" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="576.29" cy="754.88" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="535.41" cy="768.76" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="493.07" cy="777.18" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="450.00" cy="780.00" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="406.93" cy="777.18" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="364.59" cy="768.76" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="323.71" cy="754.88" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="285.00" cy="735.79" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="249.11" cy="711.81" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="216.65" cy="683.35" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="188.19" cy="650.89" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="164.21" cy="615.00" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="145.12" cy="576.29" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="131.24" cy="535.41" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="122.82" cy="493.07" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="120.00" cy="450.00" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="122.82" cy="406.93" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="131.24" cy="364.59" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="145.12" cy="323.71" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="164.21" cy="285.00" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="188.19" cy="249.11" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="216.65" cy="216.65" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="249.11" cy="188.19" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="285.00" cy="164.21" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="323.71" cy="145.12" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="364.59" cy="131.24" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="406.93" cy="122.82" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="450.00" cy="120.00" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="493.07" cy="122.82" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="535.41" cy="131.24" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="576.29" cy="145.12" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="615.00" cy="164.21" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="650.89" cy="188.19" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="683.35" cy="216.65" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="711.81" cy="249.11" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="735.79" cy="285.00" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="754.88" cy="323.71" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="768.76" cy="364.59" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+          <circle cx="777.18" cy="406.93" r="26" fill="url(#metal-silver)" stroke="#8d949c" stroke-width="1.2" opacity="0.95"/>
+      </g>
+      <circle r="330" fill="none" stroke="url(#metal-silver)" stroke-width="18" opacity="0.35"/>
+    </g>
+
+    <circle r="250" fill="url(#guilloche)" stroke="#aab1b8" stroke-width="2" opacity="0.9"/>
+    <circle r="210" fill="url(#metal-silver)" filter="url(#innerShadow)"/>
+    <circle r="210" fill="url(#gloss)" opacity="0.65"/>
+
+    <g fill="#ffffff" opacity="0.9" filter="url(#emboss)">
+      <g transform="translate(-150,-5) rotate(-10)"><polygon points="0,-18 5,-5 18,-5 8,3 12,16 0,8 -12,16 -8,3 -18,-5 -5,-5"/></g>
+      <g transform="translate(0,-40)"><polygon points="0,-22 6,-7 22,-7 9,3 14,18 0,9 -14,18 -9,3 -22,-7 -6,-7"/></g>
+      <g transform="translate(150,-5) rotate(10)"><polygon points="0,-18 5,-5 18,-5 8,3 12,16 0,8 -12,16 -8,3 -18,-5 -5,-5"/></g>
+    </g>
+
+    <text x="0" y="25" text-anchor="middle" font-family="Segoe UI, Tahoma, Arial" font-weight="900" font-size="90" fill="#ffffff" filter="url(#emboss)" letter-spacing="3">#HOOD339</text>
+    <text x="0" y="80" text-anchor="middle" font-family="Segoe UI, Tahoma, Arial" font-weight="600" font-size="24" fill="#e9edf1" opacity="0.9">Qualitätssiegel</text>
+
+    <text font-family="Segoe UI, Tahoma, Arial" font-weight="700" font-size="28" fill="#ffffff" letter-spacing="3">
+      <textPath href="#topArc" startOffset="50%" text-anchor="middle">GEPRÜFTE QUALITÄT</textPath>
+    </text>
+    <text font-family="Segoe UI, Tahoma, Arial" font-weight="700" font-size="24" fill="#e9edf1" letter-spacing="4">
+      <textPath href="#bottomArc" startOffset="50%" text-anchor="middle">PREMIUM · VERIFIED · TRUST</textPath>
+    </text>
+  </g>
+
+  <circle cx="450" cy="450" r="346" fill="none" stroke="#9198a1" stroke-width="4" opacity="0.7"/>
+</svg>

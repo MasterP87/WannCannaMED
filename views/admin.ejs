@@ -2,6 +2,7 @@
 <html lang="de">
 <head>
   <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Adminbereich – Medizinisches Cannabis</title>
   <link rel="stylesheet" href="/css/style.css" />
 </head>
@@ -17,6 +18,7 @@
     <nav>
       <a href="/admin" class="nav-link">Dashboard</a>
       <a href="/admin/products" class="nav-link">Sorten verwalten</a>
+      <a href="/admin/newsletter" class="nav-link">Newsletter</a>
       <a href="/logout" class="nav-link">Logout</a>
     </nav>
   </header>
@@ -30,25 +32,37 @@
         <thead>
           <tr>
             <th>ID</th>
+            <th>Benutzername</th>
             <th>E-Mail</th>
+            <th>Telefon</th>
+            <th>Newsletter</th>
             <th>Admin</th>
             <th>Freigegeben</th>
             <th>Aktion</th>
+            <th>Nachricht</th>
           </tr>
         </thead>
         <tbody>
           <% users.forEach(function(u) { %>
             <tr>
               <td><%= u.id %></td>
+              <td><%= u.username || '' %></td>
               <td><%= u.email %></td>
+              <td><%= u.phone || '' %></td>
+              <td><%= u.newsletter_opt_in ? 'Ja' : 'Nein' %></td>
               <td><%= u.is_admin ? 'Ja' : 'Nein' %></td>
               <td><%= u.approved ? 'Ja' : 'Nein' %></td>
               <td>
                 <% if (!u.is_admin && !u.approved) { %>
-                  <form method="post" action="/admin/approve/<%= u.id %>">
+                  <form method="post" action="/admin/approve/<%= u.id %>" style="display:inline-block;">
                     <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
                     <button type="submit" class="btn small">Freigeben</button>
                   </form>
+                <% } %>
+              </td>
+              <td>
+                <% if (!u.is_admin) { %>
+                  <a href="/admin/users/<%= u.id %>/message" class="btn small">Nachricht</a>
                 <% } %>
               </td>
             </tr>

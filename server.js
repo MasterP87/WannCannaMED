@@ -37,12 +37,19 @@ const upload = multer({ storage: imageStorage });
 // Create tables if they do not exist. Using SERIALIZE ensures the
 // statements run sequentially.
 db.serialize(() => {
+  // Create the users table with extended fields. In older deployments the
+  // table may already exist without some of these columns; they will be
+  // added later by extendUserSchema(). New installations get the full
+  // schema immediately.
   db.run(`CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
+    username TEXT UNIQUE,
     email TEXT UNIQUE,
+    phone TEXT,
     password_hash TEXT NOT NULL,
     is_admin INTEGER DEFAULT 0,
     approved INTEGER DEFAULT 0,
+    newsletter_opt_in INTEGER DEFAULT 0,
     created_at DATETIME DEFAULT CURRENT_TIMESTAMP
   )`);
   db.run(`CREATE TABLE IF NOT EXISTS products (
@@ -90,6 +97,57 @@ function extendProductSchema() {
 
 // Call the schema extension function after tables are created.
 extendProductSchema();
+
+// Extend the users table with additional columns if they do not already exist.  When the
+// schema is upgraded, this function inspects the current column names via PRAGMA
+// and adds the missing ones.  'username' and 'phone' are TEXT columns, while
+// 'newsletter_opt_in' is an INTEGER with a default of 0 (false).
+function extendUserSchema() {
+  const desiredColumns = ['username', 'phone', 'newsletter_opt_in'];
+  db.all('PRAGMA table_info(users)', (err, rows) => {
+    if (err) {
+      console.error('Error reading users table info', err.message);
+      return;
+    }
+    const existing = rows.map(r => r.name);
+    desiredColumns.forEach(col => {
+      if (!existing.includes(col)) {
+        let type = 'TEXT';
+        if (col === 'newsletter_opt_in') type = 'INTEGER DEFAULT 0';
+        db.run(
+          `ALTER TABLE users ADD COLUMN ${col} ${type}`,
+          [],
+          err2 => {
+            if (err2 && !/duplicate column name/i.test(err2.message)) {
+              console.error('Error adding column', col, err2.message);
+            }
+          }
+        );
+      }
+    });
+  });
+}
+
+// Create a messages table for storing in-app and newsletter messages.  Each message
+// includes the recipient ID, optional sender ID, subject, body, and timestamps for
+// creation and when it was read.  The table is created if it does not exist.
+function ensureMessagesTable() {
+  db.run(
+    `CREATE TABLE IF NOT EXISTS messages (
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      recipient_id INTEGER NOT NULL,
+      sender_id INTEGER,
+      subject TEXT,
+      body TEXT,
+      created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+      read_at DATETIME
+    )`
+  );
+}
+
+// Extend user schema and ensure messages table exists.
+extendUserSchema();
+ensureMessagesTable();
 
 // Insert an admin user if not present. We perform this on every
 // startup; if the row already exists, we skip insertion.
@@ -171,8 +229,6 @@ app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
 app.use(helmet());
 
-app.use('/images', express.static(__dirname));
-
 // Configure session management. Sessions are persisted in a SQLite
 // database to survive application restarts.
 app.use(
@@ -235,12 +291,20 @@ app.get('/login', (req, res) => {
   res.render('login', { errors: [] });
 });
 
-app.post('/login', (req, res) => {
-  const { email, password } = req.body;
-  if (!email || !password) {
+app.post('/login', async (req, res) => {
+  /*
+   * The login form accepts either an email address or a username in the same
+   * input field.  We treat the incoming value as an identifier and search
+   * against both the email and username columns.  If a matching user is
+   * found and the password hashes compare, the user is stored in the
+   * session.  Additional user fields (username, phone, newsletter_opt_in)
+   * are exposed on the session for use in templates.
+   */
+  const { email: identifier, password } = req.body;
+  if (!identifier || !password) {
     return res.render('login', { errors: [{ msg: 'Alle Felder sind erforderlich.' }] });
   }
-  db.get('SELECT * FROM users WHERE email = ?', [email], async (err, user) => {
+  db.get('SELECT * FROM users WHERE email = ? OR username = ?', [identifier, identifier], async (err, user) => {
     if (err) {
       return res.render('login', { errors: [{ msg: 'Fehler beim Abrufen des Benutzers.' }] });
     }
@@ -254,9 +318,12 @@ app.post('/login', (req, res) => {
     // Save user details in session (without password_hash)
     req.session.user = {
       id: user.id,
+      username: user.username,
       email: user.email,
+      phone: user.phone,
       is_admin: Boolean(user.is_admin),
-      approved: Boolean(user.approved)
+      approved: Boolean(user.approved),
+      newsletter_opt_in: Boolean(user.newsletter_opt_in)
     };
     // Redirect accordingly
     return res.redirect(user.is_admin ? '/admin' : '/showroom');
@@ -269,10 +336,17 @@ app.get('/register', (req, res) => {
 });
 
 app.post('/register', async (req, res) => {
-  const { email, password, confirm_password } = req.body;
+  /*
+   * Extended registration collects a username, email, optional phone number,
+   * and newsletter opt-in flag in addition to the password fields.  Basic
+   * validations ensure required fields are present and that the passwords
+   * match.  Duplicate username or email conflicts are handled via the
+   * unique constraints on those columns.
+   */
+  const { username, email, phone, password, confirm_password, newsletter } = req.body;
   const errors = [];
-  if (!email || !password || !confirm_password) {
-    errors.push({ msg: 'Alle Felder sind erforderlich.' });
+  if (!username || !email || !password || !confirm_password) {
+    errors.push({ msg: 'Benutzername, E-Mail und Passwort sind erforderlich.' });
   }
   if (password !== confirm_password) {
     errors.push({ msg: 'Passwörter stimmen nicht überein.' });
@@ -282,18 +356,20 @@ app.post('/register', async (req, res) => {
   }
   try {
     const hash = await bcrypt.hash(password, 10);
+    const phoneVal = phone && phone.trim() ? phone.trim() : null;
+    const newsletterOpt = newsletter ? 1 : 0;
     db.run(
-      'INSERT INTO users (email, password_hash, is_admin, approved) VALUES (?, ?, 0, 0)',
-      [email, hash],
+      'INSERT INTO users (username, email, phone, password_hash, newsletter_opt_in, is_admin, approved) VALUES (?, ?, ?, ?, ?, 0, 0)',
+      [username.trim(), email.trim(), phoneVal, hash, newsletterOpt],
       function (err) {
         if (err) {
-          const message = err.message.includes('UNIQUE')
-            ? 'Benutzer mit dieser E-Mail existiert bereits.'
+          const message = err.message && err.message.includes('UNIQUE')
+            ? 'Benutzername oder E-Mail existiert bereits.'
             : 'Fehler beim Registrieren des Benutzers.';
           return res.render('register', { errors: [{ msg: message }] });
         }
-        // Registration successful: redirect to login with message
-        return res.render('login', { errors: [{ msg: 'Registrierung erfolgreich! Warte auf Freigabe durch den Admin.' }] });
+        // Registration successful: show awaiting approval message
+        return res.render('awaiting');
       }
     );
   } catch (e) {
@@ -327,7 +403,8 @@ app.get('/admin', requireAuth, (req, res) => {
   if (!req.session.user.is_admin) {
     return res.redirect('/showroom');
   }
-  db.all('SELECT id, email, is_admin, approved FROM users WHERE id != ?', [req.session.user.id], (err, users) => {
+  // Include additional columns (username, phone, newsletter_opt_in) when listing users for the admin
+  db.all('SELECT id, username, email, phone, is_admin, approved, newsletter_opt_in FROM users WHERE id != ?', [req.session.user.id], (err, users) => {
     if (err) {
       return res.render('admin', { users: [], error: 'Fehler beim Abrufen der Benutzerliste.' });
     }
@@ -562,6 +639,121 @@ app.post('/admin/products/:id/delete', requireAdmin, (req, res) => {
     // Ignore errors here and always redirect
     res.redirect('/admin/products');
   });
+});
+
+/*
+ * Messaging and newsletter routes
+ */
+
+// Show inbox for the current user.  Lists all messages addressed to
+// the user sorted by most recent first.
+app.get('/inbox', requireAuth, (req, res) => {
+  const userId = req.session.user.id;
+  db.all(
+    'SELECT id, recipient_id, sender_id, subject, body, created_at, read_at FROM messages WHERE recipient_id = ? ORDER BY created_at DESC',
+    [userId],
+    (err, rows) => {
+      if (err) {
+        return res.render('inbox', { msgs: [], error: 'Fehler beim Laden der Nachrichten.' });
+      }
+      res.render('inbox', { msgs: rows });
+    }
+  );
+});
+
+// Mark a message as read.  Only the recipient may mark a message as read.
+app.post('/messages/:id/read', requireAuth, (req, res) => {
+  const messageId = req.params.id;
+  const userId = req.session.user.id;
+  db.run('UPDATE messages SET read_at = CURRENT_TIMESTAMP WHERE id = ? AND recipient_id = ?', [messageId, userId], () => {
+    res.redirect('/inbox');
+  });
+});
+
+// Admin: newsletter form
+app.get('/admin/newsletter', requireAdmin, (req, res) => {
+  res.render('admin-newsletter', { error: null, info: null, success: null });
+});
+
+// Admin: send newsletter to all approved subscribers
+app.post('/admin/newsletter/send', requireAdmin, (req, res) => {
+  const { subject, body } = req.body;
+  if (!subject || !body) {
+    return res.render('admin-newsletter', { error: 'Betreff und Text sind erforderlich.', info: null, success: null });
+  }
+  db.all('SELECT id FROM users WHERE approved = 1 AND newsletter_opt_in = 1', [], (err, users) => {
+    if (err) {
+      return res.render('admin-newsletter', { error: 'Fehler beim Abrufen der Abonnenten.', info: null, success: null });
+    }
+    if (!users || users.length === 0) {
+      return res.render('admin-newsletter', { error: null, info: 'Keine Abonnenten vorhanden.', success: null });
+    }
+    const stmt = db.prepare('INSERT INTO messages (recipient_id, sender_id, subject, body) VALUES (?, ?, ?, ?)');
+    users.forEach(u => {
+      stmt.run(u.id, req.session.user.id, subject, body);
+    });
+    stmt.finalize(() => {
+      res.render('admin-newsletter', { error: null, info: null, success: 'Newsletter wurde versendet.' });
+    });
+  });
+});
+
+// Admin: export newsletter subscribers as CSV
+app.get('/admin/newsletter/csv', requireAdmin, (req, res) => {
+  db.all('SELECT username, email, phone FROM users WHERE approved = 1 AND newsletter_opt_in = 1', [], (err, rows) => {
+    if (err) {
+      return res.status(500).send('Fehler beim Exportieren der Abonnenten.');
+    }
+    let csv = 'username,email,phone\n';
+    rows.forEach(r => {
+      const userName = r.username || '';
+      const email = r.email || '';
+      const phone = r.phone || '';
+      csv += `"${userName.replace(/"/g, '""')}","${email.replace(/"/g, '""')}","${phone.replace(/"/g, '""')}"\n`;
+    });
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', 'attachment; filename="newsletter-subscribers.csv"');
+    res.send(csv);
+  });
+});
+
+// Admin: display form to send a message to a specific user
+app.get('/admin/users/:id/message', requireAdmin, (req, res) => {
+  const targetId = req.params.id;
+  db.get('SELECT id, username, email FROM users WHERE id = ?', [targetId], (err, user) => {
+    if (err || !user) {
+      return res.status(404).render('404');
+    }
+    res.render('admin-message-user', { user, error: null });
+  });
+});
+
+// Admin: handle sending a targeted message
+app.post('/admin/users/:id/message', requireAdmin, (req, res) => {
+  const targetId = req.params.id;
+  const { subject, body } = req.body;
+  if (!subject || !body) {
+    db.get('SELECT id, username, email FROM users WHERE id = ?', [targetId], (err, user) => {
+      if (err || !user) {
+        return res.status(404).render('404');
+      }
+      return res.render('admin-message-user', { user, error: 'Betreff und Text sind erforderlich.' });
+    });
+    return;
+  }
+  db.run(
+    'INSERT INTO messages (recipient_id, sender_id, subject, body) VALUES (?, ?, ?, ?)',
+    [targetId, req.session.user.id, subject, body],
+    err => {
+      if (err) {
+        db.get('SELECT id, username, email FROM users WHERE id = ?', [targetId], (err2, user) => {
+          return res.render('admin-message-user', { user, error: 'Fehler beim Senden der Nachricht.' });
+        });
+      } else {
+        res.redirect('/admin');
+      }
+    }
+  );
 });
 
 // Fallback 404

@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nachricht senden – Medizinisches Cannabis</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <div class="top-row">
+        <img src="/images/wanncannabis-logo-animated.svg" alt="WannCannaBis Logo" class="logo" />
+        <span class="title">Medizinisches Cannabis – Admin</span>
+      </div>
+      <span class="subtitle">Ein Unternehmen von WannCannaBis</span>
+    </div>
+    <nav>
+      <a href="/admin" class="nav-link">Dashboard</a>
+      <a href="/admin/products" class="nav-link">Sorten verwalten</a>
+      <a href="/admin/newsletter" class="nav-link">Newsletter</a>
+      <a href="/logout" class="nav-link">Logout</a>
+    </nav>
+  </header>
+  <main class="container">
+    <div class="card">
+      <h2>Nachricht an <%= user && (user.username || user.email) %></h2>
+      <% if (error) { %>
+        <div class="error-message"><%= error %></div>
+      <% } %>
+      <form method="post" action="/admin/users/<%= user.id %>/message">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <div class="form-group">
+          <label for="subject">Betreff</label>
+          <input type="text" id="subject" name="subject" required />
+        </div>
+        <div class="form-group">
+          <label for="body">Text</label>
+          <textarea id="body" name="body" rows="6" required></textarea>
+        </div>
+        <button type="submit" class="btn">Senden</button>
+      </form>
+    </div>
+    <div style="margin-top:1rem;">
+      <a href="/admin" class="btn back-btn">Zurück</a>
+      <a href="/showroom" class="btn home-btn">Home</a>
+    </div>
+  </main>
+  <footer class="footer">
+    <img src="/images/HOOD339_Qualitaetssiegel_silber.svg" alt="Qualitätssiegel" class="seal" />
+  </footer>
+</body>
+</html>

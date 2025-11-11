@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Nachrichten – Medizinisches Cannabis</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <div class="top-row">
+        <img src="/images/wanncannabis-logo-animated.svg" alt="WannCannaBis Logo" class="logo" />
+        <span class="title">Medizinisches Cannabis</span>
+      </div>
+      <span class="subtitle">Ein Unternehmen von WannCannaBis</span>
+    </div>
+    <nav>
+      <% if (currentUser && currentUser.is_admin) { %>
+        <a href="/admin" class="nav-link">Dashboard</a>
+        <a href="/admin/products" class="nav-link">Sorten verwalten</a>
+        <a href="/admin/newsletter" class="nav-link">Newsletter</a>
+      <% } else { %>
+        <a href="/showroom" class="nav-link">Showroom</a>
+      <% } %>
+      <a href="/logout" class="nav-link">Logout</a>
+    </nav>
+  </header>
+  <main class="container">
+    <div class="card">
+      <h2>Nachrichten</h2>
+      <% if (typeof error !== 'undefined' && error) { %>
+        <div class="error-message"><%= error %></div>
+      <% } %>
+      <% if (msgs && msgs.length > 0) { %>
+        <% msgs.forEach(function(m) { %>
+          <div class="card" style="margin-bottom:1rem;">
+            <h3><%= m.subject %></h3>
+            <p><%= m.body %></p>
+            <small><%= m.created_at %> <% if (!m.read_at) { %> - <span class="tag">Neu</span><% } %></small>
+            <% if (!m.read_at) { %>
+              <form method="post" action="/messages/<%= m.id %>/read">
+                <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+                <button type="submit" class="btn small">Als gelesen markieren</button>
+              </form>
+            <% } %>
+          </div>
+        <% }); %>
+      <% } else { %>
+        <p>Keine Nachrichten.</p>
+      <% } %>
+    </div>
+    <div style="margin-top:1rem;">
+      <a href="<%= currentUser && currentUser.is_admin ? '/admin' : '/showroom' %>" class="btn back-btn">Zurück</a>
+      <a href="/showroom" class="btn home-btn">Home</a>
+    </div>
+  </main>
+  <footer class="footer">
+    <img src="/images/HOOD339_Qualitaetssiegel_silber.svg" alt="Qualitätssiegel" class="seal" />
+  </footer>
+</body>
+</html>
