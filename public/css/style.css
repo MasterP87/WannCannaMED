@@ -194,6 +194,19 @@ input:focus {
   opacity: 0.8;
 }
 
+/* Badge for unread message count */
+.badge {
+  display: none;
+  background: #ff0055;
+  color: #fff;
+  border-radius: 50%;
+  padding: 0.1rem 0.4rem;
+  font-size: 0.7rem;
+  margin-left: 0.3rem;
+  vertical-align: top;
+  box-shadow: 0 0 5px #ff0055;
+}
+
 .error-list,
 .error-message {
   color: #ff5555;

@@ -1,0 +1,98 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privatrezept erstellen – Medizinisches Cannabis</title>
+  <link rel="stylesheet" href="/css/style.css" />
+</head>
+<body>
+  <header class="header">
+    <div class="logo-container">
+      <div class="top-row">
+        <img src="/images/wanncannabis-logo-animated.svg" alt="WannCannaBis Logo" class="logo" />
+        <span class="title">Medizinisches Cannabis</span>
+      </div>
+      <span class="subtitle">Ein Unternehmen von WannCannaBis</span>
+    </div>
+    <nav>
+      <% if (currentUser && currentUser.is_admin) { %>
+        <a href="/admin" class="nav-link">Dashboard</a>
+        <a href="/admin/products" class="nav-link">Sorten verwalten</a>
+        <a href="/admin/newsletter" class="nav-link">Newsletter</a>
+        <a href="/admin/prescriptions" class="nav-link">Rezepte</a>
+      <% } else { %>
+        <a href="/showroom" class="nav-link">Showroom</a>
+        <a href="/prescriptions/new" class="nav-link">Privatrezept</a>
+      <% } %>
+      <a href="/inbox" class="nav-link">Nachrichten<span id="unread-badge" class="badge"></span></a>
+      <a href="/logout" class="nav-link">Logout</a>
+    </nav>
+  </header>
+  <main class="container">
+    <div class="card form-card">
+      <h2>Privatrezept erstellen</h2>
+      <% if (errors && errors.length > 0) { %>
+        <ul class="error-list">
+          <% errors.forEach(function(e) { %>
+            <li><%= e.msg %></li>
+          <% }); %>
+        </ul>
+      <% } %>
+      <form method="post" action="/prescriptions/new" class="form">
+        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+        <div class="form-group">
+          <label for="insurance">Krankenkasse/Kostenträger*</label>
+          <input type="text" id="insurance" name="insurance" required />
+        </div>
+        <div class="form-group">
+          <label for="patient_name">Name des Versicherten*</label>
+          <input type="text" id="patient_name" name="patient_name" required />
+        </div>
+        <div class="form-group">
+          <label for="patient_birth">Geburtsdatum*</label>
+          <input type="date" id="patient_birth" name="patient_birth" required />
+        </div>
+        <div class="form-group">
+          <label for="insurance_number">Versicherten-Nr.</label>
+          <input type="text" id="insurance_number" name="insurance_number" />
+        </div>
+        <div class="form-group">
+          <label for="doctor_practice">Betriebsstätten-Nr.</label>
+          <input type="text" id="doctor_practice" name="doctor_practice" />
+        </div>
+        <div class="form-group">
+          <label for="doctor_number">Arzt-Nr.*</label>
+          <input type="text" id="doctor_number" name="doctor_number" required />
+        </div>
+        <div class="form-group">
+          <label for="date">Datum*</label>
+          <input type="date" id="date" name="date" required />
+        </div>
+        <div class="form-section">
+          <h3>Verordnungen</h3>
+          <div class="form-group">
+            <label for="medication1">1. Verordnung</label>
+            <input type="text" id="medication1" name="medication1" />
+          </div>
+          <div class="form-group">
+            <label for="medication2">2. Verordnung</label>
+            <input type="text" id="medication2" name="medication2" />
+          </div>
+          <div class="form-group">
+            <label for="medication3">3. Verordnung</label>
+            <input type="text" id="medication3" name="medication3" />
+          </div>
+        </div>
+        <button type="submit" class="btn">Rezept erstellen</button>
+        <a href="<%= currentUser && currentUser.is_admin ? '/admin' : '/showroom' %>" class="btn back-btn">Abbrechen</a>
+      </form>
+    </div>
+  </main>
+  <footer class="footer">
+    <img src="/images/HOOD339_Qualitaetssiegel_silber.svg" alt="Qualitätssiegel" class="seal" />
+  </footer>
+  <!-- Unread message polling script -->
+  <script src="/js/unread.js"></script>
+</body>
+</html>

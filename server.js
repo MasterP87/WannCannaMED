@@ -149,6 +149,92 @@ function ensureMessagesTable() {
 extendUserSchema();
 ensureMessagesTable();
 
+// Create a prescriptions table for private prescriptions (A6). Each prescription
+// record stores the basic fields required for printing, including insurance
+// provider, patient details, doctor information and up to three medication
+// lines. The table is created if it does not exist.
+function ensurePrescriptionTable() {
+  db.run(`CREATE TABLE IF NOT EXISTS prescriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER,
+    insurance TEXT,
+    patient_name TEXT,
+    patient_birth TEXT,
+    insurance_number TEXT,
+    doctor_practice TEXT,
+    doctor_number TEXT,
+    date TEXT,
+    medication1 TEXT,
+    medication2 TEXT,
+    medication3 TEXT,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+  )`);
+}
+
+// Seed additional cannabis products if they do not already exist. This function
+// inserts three predefined strains into the products table along with
+// descriptive metadata and placeholder images. If a product with the same
+// title exists, it will not be duplicated.
+function ensureAdditionalProducts() {
+  const additional = [
+    {
+      title: 'Remexian Grape Galena 27/1',
+      description:
+        'Grape Galena ist eine indica-dominante Sorte mit 27% THC und <1% CBD. Sie ist unbestrahlt und kombiniert OG Kush × Lost Sailor × Platinum Kush. Aromen: fruchtig, blumig; Effekte: relaxed, schläfrig, glücklich; Terpene: Beta‑Myrcen, Limonen, Alpha‑Humulen, Linalool, Selinadiene.',
+      price: 5.69,
+      image: 'remexian.jpg',
+      thc: '27%',
+      cbd: '<1%',
+      effects: 'Relaxed, Schläfrig, Glücklich',
+      aroma: 'Fruchtig, Blumen',
+      terpenes: 'Beta-Myrcen, Limonen, Alpha-Humulen, Linalool, Selinadiene'
+    },
+    {
+      title: 'Peace Naturals GMO Cookies 31/1',
+      description:
+        'GMO Cookies (Girl Scout Cookies × Chemdawg) hat 31% THC und <1% CBD. Die Sorte ist eine starke Indica und unbestrahlt. Aroma: Diesel; Effekte: euphorisch, schläfrig, relaxed; Terpene: Limonen, Alpha‑Caryophyllen, Myrcen.',
+      price: 6.3,
+      image: 'gmo_cookies.jpg',
+      thc: '31%',
+      cbd: '<1%',
+      effects: 'Euphorisch, Schläfrig, Relaxed',
+      aroma: 'Diesel',
+      terpenes: 'Limonen, Alpha-Caryophyllen, Myrcen'
+    },
+    {
+      title: 'AMICI Blueberry Headband 22/1',
+      description:
+        'Blueberry Headband ist eine indica-dominante Hybride mit 22% THC und <1% CBD. Sie ist unbestrahlt und wird unter EU‑GMP‑Bedingungen in Portugal produziert. Das Aroma ist beerig‑würzig mit Noten von Mango, Thymian und Zitrusfrüchten. Effekte: cerebral, körperbetont, lang anhaltend, ausgewogen; Terpene: Caryophyllen, Linalool, Myrcen.',
+      price: 5.5,
+      image: 'blueberry_headband.jpg',
+      thc: '22%',
+      cbd: '<1%',
+      effects: 'Cerebral, Körperbetont, Lang anhaltend, Ausgewogen',
+      aroma: 'Beerig, Würzig',
+      terpenes: 'Caryophyllen, Linalool, Myrcen'
+    }
+  ];
+  additional.forEach(p => {
+    db.get('SELECT id FROM products WHERE title = ?', [p.title], (err, row) => {
+      if (err) {
+        console.error('Fehler beim Prüfen der Sorte', p.title, err.message);
+        return;
+      }
+      if (!row) {
+        db.run(
+          'INSERT INTO products (title, description, price, image, thc, cbd, effects, aroma, terpenes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [p.title, p.description, p.price, p.image, p.thc, p.cbd, p.effects, p.aroma, p.terpenes],
+          err2 => {
+            if (err2) {
+              console.error('Fehler beim Einfügen der Sorte', p.title, err2.message);
+            }
+          }
+        );
+      }
+    });
+  });
+}
+
 // Insert an admin user if not present. We perform this on every
 // startup; if the row already exists, we skip insertion.
 async function ensureAdmin() {
@@ -221,6 +307,13 @@ async function ensureProducts() {
 // Immediately ensure the admin and demo products exist.
 ensureAdmin().catch(err => console.error(err));
 ensureProducts().catch(err => console.error(err));
+
+// Ensure the prescriptions table exists and seed additional cannabis
+// products (e.g. Remexian Grape Galena, Peace Naturals GMO Cookies, Blueberry
+// Headband) if they are not already present. These calls run once at
+// startup to upgrade the schema and populate the demo data.
+ensurePrescriptionTable();
+ensureAdditionalProducts();
 
 // Set the view engine to EJS and configure express static files.
 app.set('view engine', 'ejs');
@@ -556,13 +649,19 @@ app.post('/admin/products/:id/edit', requireAdmin, upload.single('imageFile'), (
     errors.push({ msg: 'Preis muss eine positive Zahl sein.' });
   }
   if (errors.length > 0) {
+    // When validation errors occur we still render the form with the submitted
+    // fields populated. Because no new file has been processed yet, reuse
+    // the current image if available, otherwise leave it blank.  `req.body` does
+    // not include the image field for multipart forms so we fetch it from the
+    // database later when editing without a new file.  Here we set it to
+    // undefined as a placeholder; the template will handle missing images.
     return res.render('admin-product-form', {
       product: {
         id,
         title,
         description,
         price,
-        image,
+        image: '',
         thc,
         cbd,
         effects,
@@ -638,6 +737,122 @@ app.post('/admin/products/:id/delete', requireAdmin, (req, res) => {
   db.run('DELETE FROM products WHERE id = ?', [id], err => {
     // Ignore errors here and always redirect
     res.redirect('/admin/products');
+  });
+});
+
+/*
+ * Unread message count API
+ *
+ * Returns a JSON object with the number of unread messages for the
+ * currently logged-in user. This endpoint is used by the client-side
+ * polling script to update the unread badge in the navigation bar.
+ */
+app.get('/api/unread-count', requireAuth, (req, res) => {
+  const userId = req.session.user.id;
+  db.get(
+    'SELECT COUNT(*) AS count FROM messages WHERE recipient_id = ? AND read_at IS NULL',
+    [userId],
+    (err, row) => {
+      if (err) {
+        return res.json({ count: 0 });
+      }
+      res.json({ count: row ? row.count : 0 });
+    }
+  );
+});
+
+/*
+ * Prescription creation routes
+ *
+ * The GET route renders a form where the user (typically a doctor) can
+ * input all necessary data for a private cannabis prescription. The POST
+ * route stores the prescription in the database and redirects to a print
+ * view with the data positioned on an A6 template.
+ */
+app.get('/prescriptions/new', requireAuth, (req, res) => {
+  // Only approved users or admins may create prescriptions
+  if (!req.session.user.approved && !req.session.user.is_admin) {
+    return res.render('awaiting');
+  }
+  res.render('prescription-form', { errors: [] });
+});
+
+app.post('/prescriptions/new', requireAuth, (req, res) => {
+  const {
+    insurance,
+    patient_name,
+    patient_birth,
+    insurance_number,
+    doctor_practice,
+    doctor_number,
+    date,
+    medication1,
+    medication2,
+    medication3
+  } = req.body;
+  const errors = [];
+  if (!insurance || !patient_name || !patient_birth || !doctor_number || !date) {
+    errors.push({ msg: 'Bitte füllen Sie alle Pflichtfelder aus.' });
+  }
+  if (errors.length > 0) {
+    return res.render('prescription-form', { errors });
+  }
+  db.run(
+    `INSERT INTO prescriptions (user_id, insurance, patient_name, patient_birth, insurance_number, doctor_practice, doctor_number, date, medication1, medication2, medication3)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    [
+      req.session.user.id,
+      insurance.trim(),
+      patient_name.trim(),
+      patient_birth.trim(),
+      insurance_number ? insurance_number.trim() : null,
+      doctor_practice ? doctor_practice.trim() : null,
+      doctor_number.trim(),
+      date.trim(),
+      medication1 ? medication1.trim() : null,
+      medication2 ? medication2.trim() : null,
+      medication3 ? medication3.trim() : null
+    ],
+    function (err) {
+      if (err) {
+        console.error('Fehler beim Speichern des Rezepts:', err.message);
+        return res.render('prescription-form', { errors: [{ msg: 'Fehler beim Speichern des Rezepts.' }] });
+      }
+      // After saving the prescription, do not show it to the user.
+      // Instead, redirect to a success page so that only admins can print the prescription.
+      res.redirect('/prescriptions/success');
+    }
+  );
+});
+
+// Print view for a prescription. Only admins may access this route.
+app.get('/prescriptions/:id/print', requireAdmin, (req, res) => {
+  const id = req.params.id;
+  db.get('SELECT * FROM prescriptions WHERE id = ?', [id], (err, prescription) => {
+    if (err || !prescription) {
+      return res.status(404).render('404');
+    }
+    // Only admin can print prescriptions
+    res.render('prescription-print', { prescription });
+  });
+});
+
+// Success page shown to users after creating a prescription.  Users are not shown
+// the actual prescription document here.  They are informed that the
+// prescription has been created and that output is handled by the admin.
+app.get('/prescriptions/success', requireAuth, (req, res) => {
+  res.render('prescription-success');
+});
+
+// Admin route: list all prescriptions for printing.  Displays all records
+// in descending order of creation.  Admins can then click to print each
+// prescription individually.
+app.get('/admin/prescriptions', requireAdmin, (req, res) => {
+  db.all('SELECT * FROM prescriptions ORDER BY created_at DESC', [], (err, rows) => {
+    if (err) {
+      return res.render('admin-prescriptions', { prescriptions: [], error: 'Fehler beim Abrufen der Rezepte.' });
+    }
+    res.render('admin-prescriptions', { prescriptions: rows, error: null });
   });
 });
 
@@ -754,6 +969,18 @@ app.post('/admin/users/:id/message', requireAdmin, (req, res) => {
       }
     }
   );
+});
+
+// Fallback 404
+
+// Handle CSRF token errors gracefully.  When a CSRF mismatch occurs,
+// csurf throws an error with code EBADCSRFTOKEN.  Here we catch
+// the error and render the 404 template with a custom message.
+app.use(function (err, req, res, next) {
+  if (err.code === 'EBADCSRFTOKEN') {
+    return res.status(403).render('404', { message: 'forbidden' });
+  }
+  return next(err);
 });
 
 // Fallback 404

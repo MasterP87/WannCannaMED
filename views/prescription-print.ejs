@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Privatrezept – Druckansicht</title>
+  <style>
+    /* Container for A6 prescription page */
+    .prescription-container {
+      position: relative;
+      width: 148mm;
+      height: 105mm;
+      margin: 0 auto;
+      background-image: url('/images/prescription_blank.jpg');
+      background-size: contain;
+      background-repeat: no-repeat;
+      background-position: center;
+    }
+    .field {
+      position: absolute;
+      font-size: 3mm;
+      line-height: 1;
+      white-space: nowrap;
+    }
+    .btn {
+      display: inline-block;
+      padding: 0.6rem 1.2rem;
+      background: linear-gradient(45deg, #00ff99, #00ffff, #ff00ff);
+      border: none;
+      border-radius: 8px;
+      color: #000;
+      cursor: pointer;
+      font-weight: bold;
+      box-shadow: 0 0 10px #00ff99, 0 0 20px #ff00ff;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="prescription-container">
+    <!-- Insurance field -->
+    <div class="field" style="top: 8mm; left: 6mm; width: 85mm;">
+      <%= prescription.insurance %>
+    </div>
+    <!-- Patient name -->
+    <div class="field" style="top: 25mm; left: 6mm; width: 85mm;">
+      <%= prescription.patient_name %>
+    </div>
+    <!-- Patient birthdate -->
+    <div class="field" style="top: 30mm; left: 92mm; width: 30mm;">
+      <%= prescription.patient_birth %>
+    </div>
+    <!-- Insurance number -->
+    <div class="field" style="top: 40mm; left: 40mm; width: 50mm;">
+      <%= prescription.insurance_number || '' %>
+    </div>
+    <!-- Doctor practice number -->
+    <div class="field" style="top: 55mm; left: 6mm; width: 30mm;">
+      <%= prescription.doctor_practice || '' %>
+    </div>
+    <!-- Doctor number -->
+    <div class="field" style="top: 55mm; left: 45mm; width: 30mm;">
+      <%= prescription.doctor_number %>
+    </div>
+    <!-- Date -->
+    <div class="field" style="top: 55mm; left: 92mm; width: 30mm;">
+      <%= prescription.date %>
+    </div>
+    <!-- Medication lines -->
+    <div class="field" style="top: 20mm; left: 108mm; width: 35mm;">
+      <%= prescription.medication1 || '' %>
+    </div>
+    <div class="field" style="top: 30mm; left: 108mm; width: 35mm;">
+      <%= prescription.medication2 || '' %>
+    </div>
+    <div class="field" style="top: 40mm; left: 108mm; width: 35mm;">
+      <%= prescription.medication3 || '' %>
+    </div>
+  </div>
+  <div style="text-align: center; margin-top: 1rem;">
+    <% if (currentUser && currentUser.is_admin) { %>
+      <a href="/admin/prescriptions" class="btn">Zurück zu den Rezepten</a>
+    <% } else { %>
+      <a href="/showroom" class="btn">Zurück zum Showroom</a>
+    <% } %>
+  </div>
+</body>
+</html>

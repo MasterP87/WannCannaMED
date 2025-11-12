@@ -26,7 +26,11 @@
   <main class="container">
     <div class="card">
       <h2>404 – Seite nicht gefunden</h2>
-      <p>Die angeforderte Seite konnte nicht gefunden werden.</p>
+      <% if (typeof message !== 'undefined' && message) { %>
+        <p><%= message %></p>
+      <% } else { %>
+        <p>Die angeforderte Seite konnte nicht gefunden werden.</p>
+      <% } %>
     </div>
   </main>
 
