@@ -29,7 +29,7 @@
       <% } %>
       <% products.forEach(function(p) { %>
         <div class="product-card">
-          <img src="/images/<%= p.image %>" alt="<%= p.title %>" class="product-image" />
+          <img src="/uploads/<%= p.image %>" alt="<%= p.title %>" class="product-image" />
           <h3><%= p.title %></h3>
           <p class="description"><%= p.description %></p>
           <p class="price"><%= p.price.toFixed(2) %>€</p>

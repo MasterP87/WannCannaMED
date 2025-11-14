@@ -6,17 +6,35 @@ const bcrypt = require('bcrypt');
 const csrf = require('csurf');
 const helmet = require('helmet');
 const sqlite3 = require('sqlite3').verbose();
+const fs = require('fs');
 const path = require('path');
 const multer = require('multer');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Configure the SQLite database. The database file lives alongside
-// server.js so it persists between application restarts. If the file
-// doesn't exist it will be created automatically.
-const dbPath = path.join(__dirname, 'data.db');
-const db = new sqlite3.Database(dbPath);
+// Trust the first proxy.  This is important when deploying behind a
+// reverse proxy (such as on Render) so that secure cookies work properly.
+app.set('trust proxy', 1);
+
+// Configure persistent directories.  When deploying to platforms like Render,
+// you should mount a persistent disk at `/data` and set the environment
+// variables below so that all database, session and upload files survive
+// container restarts.  Defaults fall back to the project directory for
+// local development.
+const DATA_DIR    = process.env.DATA_DIR    || __dirname;
+const DB_PATH     = process.env.DB_PATH     || path.join(DATA_DIR, 'data.db');
+const SESSION_DIR = process.env.SESSION_DIR || DATA_DIR;
+const UPLOAD_DIR  = process.env.UPLOAD_DIR  || path.join(DATA_DIR, 'uploads');
+
+// Ensure the upload directory exists.  Without this call multer will fail
+// if the directory is missing on first upload.
+fs.mkdirSync(UPLOAD_DIR, { recursive: true });
+
+// Open the SQLite database at the configured path.  The file will be
+// created automatically if it does not exist.  Note that using DATA_DIR
+// ensures the DB file is stored on a persistent volume when configured.
+const db = new sqlite3.Database(DB_PATH);
 
 // Configure file upload for product images using multer. Images are stored
 // in the public/images directory. Filenames are generated uniquely to
@@ -320,13 +338,25 @@ app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 app.use(express.urlencoded({ extended: false }));
 app.use(express.static(path.join(__dirname, 'public')));
+// Expose uploads directory as static.  Without this, images uploaded via
+// multer cannot be served.  The UPLOAD_DIR defaults to a local `uploads`
+// folder but can be pointed to a persistent mount via the environment.
+// Serve uploads from both the default public/images directory and the
+// persistent upload directory.  If a file is not found in the first
+// directory it will fall back to the second.  This allows us to
+// reference all product images uniformly via the /uploads path.
+app.use('/uploads', express.static(path.join(__dirname, 'public/images')));
+app.use('/uploads', express.static(UPLOAD_DIR));
 app.use(helmet());
 
 // Configure session management. Sessions are persisted in a SQLite
 // database to survive application restarts.
 app.use(
   session({
-    store: new SQLiteStore({ db: 'sessions.db', dir: __dirname }),
+    // Persist session data alongside the database; SESSION_DIR defaults
+    // to DATA_DIR so sessions survive application restarts when DATA_DIR
+    // points to a persistent volume.
+    store: new SQLiteStore({ db: 'sessions.db', dir: SESSION_DIR }),
     secret: process.env.SESSION_SECRET || 'replace_this_secret',
     resave: false,
     saveUninitialized: false,
