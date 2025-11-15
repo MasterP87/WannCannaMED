@@ -39,54 +39,239 @@
           <% }); %>
         </ul>
       <% } %>
-      <form method="post" action="/prescriptions/new" class="form">
-        <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
-        <div class="form-group">
-          <label for="insurance">Krankenkasse/Kostenträger*</label>
-          <input type="text" id="insurance" name="insurance" required />
-        </div>
-        <div class="form-group">
-          <label for="patient_name">Name des Versicherten*</label>
-          <input type="text" id="patient_name" name="patient_name" required />
-        </div>
-        <div class="form-group">
-          <label for="patient_birth">Geburtsdatum*</label>
-          <input type="date" id="patient_birth" name="patient_birth" required />
-        </div>
-        <div class="form-group">
-          <label for="insurance_number">Versicherten-Nr.</label>
-          <input type="text" id="insurance_number" name="insurance_number" />
-        </div>
-        <div class="form-group">
-          <label for="doctor_practice">Betriebsstätten-Nr.</label>
-          <input type="text" id="doctor_practice" name="doctor_practice" />
-        </div>
-        <div class="form-group">
-          <label for="doctor_number">Arzt-Nr.*</label>
-          <input type="text" id="doctor_number" name="doctor_number" required />
-        </div>
-        <div class="form-group">
-          <label for="date">Datum*</label>
-          <input type="date" id="date" name="date" required />
-        </div>
-        <div class="form-section">
-          <h3>Verordnungen</h3>
-          <div class="form-group">
-            <label for="medication1">1. Verordnung</label>
-            <input type="text" id="medication1" name="medication1" />
-          </div>
-          <div class="form-group">
-            <label for="medication2">2. Verordnung</label>
-            <input type="text" id="medication2" name="medication2" />
-          </div>
-          <div class="form-group">
-            <label for="medication3">3. Verordnung</label>
-            <input type="text" id="medication3" name="medication3" />
-          </div>
-        </div>
-        <button type="submit" class="btn">Rezept erstellen</button>
-        <a href="<%= currentUser && currentUser.is_admin ? '/admin' : '/showroom' %>" class="btn back-btn">Abbrechen</a>
-      </form>
+      
+<form method="post" action="/prescriptions/new" class="form">
+  <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
+  <div class="form-section">
+    <h3>Allgemeine Angaben</h3>
+    <div class="form-group">
+      <label for="insurance">Kostenträger</label>
+      <input type="text" id="insurance" name="insurance" value="Privat" readonly />
+      <small>Privatrezept – Kostenträger ist immer „Privat“.</small>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Patientendaten</h3>
+    <div class="form-group">
+      <label for="first_name">Vorname*</label>
+      <input
+        type="text"
+        id="first_name"
+        name="first_name"
+        required
+        value="<%= formData.first_name || '' %>"
+      />
+    </div>
+    <div class="form-group">
+      <label for="last_name">Nachname*</label>
+      <input
+        type="text"
+        id="last_name"
+        name="last_name"
+        required
+        value="<%= formData.last_name || '' %>"
+      />
+    </div>
+    <div class="form-group">
+      <label for="street">Straße*</label>
+      <input
+        type="text"
+        id="street"
+        name="street"
+        required
+        value="<%= formData.street || '' %>"
+      />
+    </div>
+    <div class="form-group">
+      <label for="house_number">Hausnummer*</label>
+      <input
+        type="text"
+        id="house_number"
+        name="house_number"
+        required
+        value="<%= formData.house_number || '' %>"
+      />
+    </div>
+    <div class="form-group">
+      <label for="zip_code">Postleitzahl*</label>
+      <input
+        type="text"
+        id="zip_code"
+        name="zip_code"
+        required
+        value="<%= formData.zip_code || '' %>"
+      />
+    </div>
+    <div class="form-group">
+      <label for="city">Wohnort*</label>
+      <input
+        type="text"
+        id="city"
+        name="city"
+        required
+        value="<%= formData.city || '' %>"
+      />
+    </div>
+    <div class="form-group">
+      <label for="patient_birth">Geburtsdatum*</label>
+      <input
+        type="date"
+        id="patient_birth"
+        name="patient_birth"
+        required
+        value="<%= formData.patient_birth || '' %>"
+      />
+    </div>
+    <div class="form-group">
+      <label for="insurance_number">Versicherten-Nr.</label>
+      <input
+        type="text"
+        id="insurance_number"
+        name="insurance_number"
+        value="<%= formData.insurance_number || '' %>"
+      />
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Praxis / Arzt</h3>
+    <div class="form-group">
+      <label for="doctor_practice">Betriebsstätten-Nr.</label>
+      <input
+        type="text"
+        id="doctor_practice"
+        name="doctor_practice"
+        value="<%= formData.doctor_practice || '' %>"
+      />
+    </div>
+    <div class="form-group">
+      <label for="doctor_number">Arzt-Nr.*</label>
+      <input
+        type="text"
+        id="doctor_number"
+        name="doctor_number"
+        required
+        value="<%= formData.doctor_number || '' %>"
+      />
+    </div>
+    <div class="form-group">
+      <label>Rezeptdatum (letzter Werktag)</label>
+      <div class="readonly-field"><%= prescriptionDateDisplay %></div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Indikation</h3>
+    <div class="form-group">
+      <label>Grund für das Privatrezept*</label>
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="indication" value="Schmerzen"
+            <%= formData.indication === 'Schmerzen' ? 'checked' : '' %> />
+          Schmerzen
+        </label>
+        <label>
+          <input type="radio" name="indication" value="Schlaflosigkeit"
+            <%= formData.indication === 'Schlaflosigkeit' ? 'checked' : '' %> />
+          Schlaflosigkeit
+        </label>
+        <label>
+          <input type="radio" name="indication" value="Stress"
+            <%= formData.indication === 'Stress' ? 'checked' : '' %> />
+          Stress
+        </label>
+        <label>
+          <input type="radio" name="indication" value="Appetitlosigkeit"
+            <%= formData.indication === 'Appetitlosigkeit' ? 'checked' : '' %> />
+          Appetitlosigkeit
+        </label>
+        <label>
+          <input type="radio" name="indication" value="Sonstiges"
+            <%= formData.indication === 'Sonstiges' ? 'checked' : '' %> />
+          Sonstiges
+        </label>
+      </div>
+    </div>
+    <div class="form-group">
+      <label for="indication_other">Sonstiges (optional)</label>
+      <input
+        type="text"
+        id="indication_other"
+        name="indication_other"
+        value="<%= formData.indication_other || '' %>"
+      />
+    </div>
+    <div class="form-group">
+      <label>Vorherige Cannabis-Verordnung?</label>
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="previous_cannabis" value="ja"
+            <%= formData.previous_cannabis === 'ja' ? 'checked' : '' %> />
+          Ja
+        </label>
+        <label>
+          <input type="radio" name="previous_cannabis" value="nein"
+            <%= formData.previous_cannabis === 'nein' ? 'checked' : '' %> />
+          Nein
+        </label>
+      </div>
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Medikation (Cannabisblüten)</h3>
+    <p>
+      Bitte geben Sie nur die Gesamtmenge in Gramm und die Sorte an. Der Text auf dem Rezept
+      wird automatisch im Format:<br />
+      „Xg Cannabisblüten, „SorteX“, unzerkleinert, verdampfen/inhalieren,
+      Dosierung: ED 0,01g TD 1,00g“ erzeugt.
+    </p>
+    <div class="form-group">
+      <label for="medication_grams">Menge in Gramm*</label>
+      <input
+        type="number"
+        step="0.01"
+        min="0.01"
+        id="medication_grams"
+        name="medication_grams"
+        required
+        value="<%= formData.medication_grams || '' %>"
+      />
+    </div>
+    <div class="form-group">
+      <label for="medication_strain">Cannabissorte*</label>
+      <input
+        type="text"
+        id="medication_strain"
+        name="medication_strain"
+        required
+        value="<%= formData.medication_strain || '' %>"
+      />
+    </div>
+  </div>
+
+  <div class="form-section">
+    <h3>Kostenhinweis</h3>
+    <div class="form-group">
+      <label>
+        <input
+          type="checkbox"
+          id="cost_confirm"
+          name="cost_confirm"
+          value="ja"
+          <%= formData.cost_confirm === 'ja' ? 'checked' : '' %>
+        />
+        Ich bestätige, dass die Erstellung eines Privatrezeptes 10&nbsp;Euro kostet,
+        welche bei Abholung zu bezahlen sind.
+      </label>
+    </div>
+  </div>
+
+  <button type="submit" class="btn">Rezept erstellen</button>
+  <a href="<%= currentUser && currentUser.is_admin ? '/admin' : '/showroom' %>" class="btn back-btn">Abbrechen</a>
+</form>
     </div>
   </main>
   <footer class="footer">
