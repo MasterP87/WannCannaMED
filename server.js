@@ -194,11 +194,18 @@ function ensurePrescriptionTable() {
 // descriptive metadata and placeholder images. If a product with the same
 // title exists, it will not be duplicated.
 function ensureAdditionalProducts() {
+  /*
+   * Stellt sicher, dass die zusätzlichen Metadaten-Spalten in der
+   * products-Tabelle existieren, bevor die neuen Sorten eingefügt
+   * werden. Dadurch vermeiden wir Fehler wie
+   * "table products has no column named thc" bei bereits
+   * vorhandenen Datenbanken.
+   */
   const additional = [
     {
       title: 'Remexian Grape Galena 27/1',
       description:
-        'Grape Galena ist eine indica-dominante Sorte mit 27% THC und <1% CBD. Sie ist unbestrahlt und kombiniert OG Kush × Lost Sailor × Platinum Kush. Aromen: fruchtig, blumig; Effekte: relaxed, schläfrig, glücklich; Terpene: Beta‑Myrcen, Limonen, Alpha‑Humulen, Linalool, Selinadiene.',
+        'Grape Galena ist eine indica-dominante Sorte mit 27% THC. Wirkung: relaxed, schläfrig, glücklich; Aroma: fruchtig, blumig; Terpene: Beta‑Myrcen, Limonen, Alpha‑Humulen, Linalool, Selinadiene.',
       price: 5.69,
       image: 'remexian.jpg',
       thc: '27%',
@@ -210,8 +217,8 @@ function ensureAdditionalProducts() {
     {
       title: 'Peace Naturals GMO Cookies 31/1',
       description:
-        'GMO Cookies (Girl Scout Cookies × Chemdawg) hat 31% THC und <1% CBD. Die Sorte ist eine starke Indica und unbestrahlt. Aroma: Diesel; Effekte: euphorisch, schläfrig, relaxed; Terpene: Limonen, Alpha‑Caryophyllen, Myrcen.',
-      price: 6.3,
+        'GMO Cookies ist eine indica-dominante Sorte mit 31% THC. Wirkung: euphorisch, schläfrig, relaxed; Aroma: Diesel; Terpene: Limonen, Alpha-Caryophyllen, Myrcen.',
+      price: 5.49,
       image: 'gmo_cookies.jpg',
       thc: '31%',
       cbd: '<1%',
@@ -222,7 +229,7 @@ function ensureAdditionalProducts() {
     {
       title: 'AMICI Blueberry Headband 22/1',
       description:
-        'Blueberry Headband ist eine indica-dominante Hybride mit 22% THC und <1% CBD. Sie ist unbestrahlt und wird unter EU‑GMP‑Bedingungen in Portugal produziert. Das Aroma ist beerig‑würzig mit Noten von Mango, Thymian und Zitrusfrüchten. Effekte: cerebral, körperbetont, lang anhaltend, ausgewogen; Terpene: Caryophyllen, Linalool, Myrcen.',
+        'Blueberry Headband ist eine indica-dominante Hybride mit 22% THC. Wirkung: cerebral, körperbetont, lang anhaltend, ausgewogen; Aroma: beerig, würzig; Terpene: Caryophyllen, Linalool, Myrcen.',
       price: 5.5,
       image: 'blueberry_headband.jpg',
       thc: '22%',
@@ -232,28 +239,69 @@ function ensureAdditionalProducts() {
       terpenes: 'Caryophyllen, Linalool, Myrcen'
     }
   ];
-  additional.forEach(p => {
-    db.get('SELECT id FROM products WHERE title = ?', [p.title], (err, row) => {
-      if (err) {
-        console.error('Fehler beim Prüfen der Sorte', p.title, err.message);
+
+  const desiredColumns = ['thc', 'cbd', 'effects', 'aroma', 'terpenes'];
+
+  db.all('PRAGMA table_info(products)', (err, rows) => {
+    if (err) {
+      console.error('Fehler beim Lesen der products-Tabelleninfo', err.message);
+      return;
+    }
+
+    const existing = rows.map(r => r.name);
+    const missing = desiredColumns.filter(col => !existing.includes(col));
+
+    const addNextColumn = index => {
+      if (index >= missing.length) {
+        // Alle Spalten vorhanden -> jetzt Sorten einfügen.
+        seedAdditionalProducts();
         return;
       }
-      if (!row) {
-        db.run(
-          'INSERT INTO products (title, description, price, image, thc, cbd, effects, aroma, terpenes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [p.title, p.description, p.price, p.image, p.thc, p.cbd, p.effects, p.aroma, p.terpenes],
-          err2 => {
-            if (err2) {
-              console.error('Fehler beim Einfügen der Sorte', p.title, err2.message);
-            }
+      const col = missing[index];
+      db.run(
+        `ALTER TABLE products ADD COLUMN ${col} TEXT DEFAULT ''`,
+        [],
+        err2 => {
+          if (err2 && !/duplicate column name/i.test(err2.message)) {
+            console.error('Fehler beim Hinzufügen der Spalte', col, err2.message);
           }
-        );
-      }
-    });
+          addNextColumn(index + 1);
+        }
+      );
+    };
+
+    const seedAdditionalProducts = () => {
+      additional.forEach(p => {
+        db.get('SELECT id FROM products WHERE title = ?', [p.title], (err3, row) => {
+          if (err3) {
+            console.error('Fehler beim Prüfen der Sorte', p.title, err3.message);
+            return;
+          }
+          if (!row) {
+            db.run(
+              'INSERT INTO products (title, description, price, image, thc, cbd, effects, aroma, terpenes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+              [p.title, p.description, p.price, p.image, p.thc, p.cbd, p.effects, p.aroma, p.terpenes],
+              err4 => {
+                if (err4) {
+                  console.error('Fehler beim Einfügen der Sorte', p.title, err4.message);
+                }
+              }
+            );
+          }
+        });
+      });
+    };
+
+    if (missing.length === 0) {
+      seedAdditionalProducts();
+    } else {
+      addNextColumn(0);
+    }
   });
 }
 
-// Insert an admin user if not present. We perform this on every
+// Insert an admin user if not present.
+ We perform this on every
 // startup; if the row already exists, we skip insertion.
 async function ensureAdmin() {
   return new Promise((resolve, reject) => {
