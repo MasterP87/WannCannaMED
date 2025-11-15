@@ -241,88 +241,89 @@ function ensureAdditionalProducts() {
     {
       title: 'Remexian Grape Galena 27/1',
       description:
-        'Grape Galena ist eine indica-dominante Sorte mit 27% THC und <1% CBD. Sie ist unbestrahlt und kombiniert OG Kush × Lost Sailor × Platinum Kush. Aromen: fruchtig, blumig; Effekte: relaxed, schläfrig, glücklich; Terpene: Beta‑Myrcen, Limonen, Alpha‑Humulen, Linalool, Selinadiene.',
+        'Indica-dominante Sorte mit ca. 27% THC.',
       price: 5.69,
       image: 'remexian.jpg',
       thc: '27%',
       cbd: '<1%',
-      effects: 'Relaxed, Schläfrig, Glücklich',
-      aroma: 'Fruchtig, Blumen',
-      terpenes: 'Beta-Myrcen, Limonen, Alpha-Humulen, Linalool, Selinadiene'
+      effects: 'Relaxed, schläfrig, glücklich',
+      aroma: 'Fruchtig, blumig',
+      terpenes: 'Myrcen, Limonen, Humulen, Linalool, Selinadiene'
     },
     {
       title: 'Peace Naturals GMO Cookies 31/1',
       description:
-        'GMO Cookies (Girl Scout Cookies × Chemdawg) hat 31% THC und <1% CBD. Die Sorte ist eine starke Indica und unbestrahlt. Aroma: Diesel; Effekte: euphorisch, schläfrig, relaxed; Terpene: Limonen, Alpha‑Caryophyllen, Myrcen.',
+        'Starke Indica-Sorte mit etwa 31% THC und <1% CBD.',
       price: 6.3,
       image: 'gmo_cookies.jpg',
       thc: '31%',
       cbd: '<1%',
-      effects: 'Euphorisch, Schläfrig, Relaxed',
+      effects: 'Euphorisch, schläfrig, relaxed',
       aroma: 'Diesel',
-      terpenes: 'Limonen, Alpha-Caryophyllen, Myrcen'
+      terpenes: 'Limonen, Caryophyllen, Myrcen'
     },
     {
       title: 'AMICI Blueberry Headband 22/1',
       description:
-        'Blueberry Headband ist eine indica-dominante Hybride mit 22% THC und <1% CBD. Sie ist unbestrahlt und wird unter EU‑GMP‑Bedingungen in Portugal produziert. Das Aroma ist beerig‑würzig mit Noten von Mango, Thymian und Zitrusfrüchten. Effekte: cerebral, körperbetont, lang anhaltend, ausgewogen; Terpene: Caryophyllen, Linalool, Myrcen.',
+        'Indica-dominante Hybride mit ca. 22% THC.',
       price: 5.5,
       image: 'blueberry_headband.jpg',
       thc: '22%',
       cbd: '<1%',
-      effects: 'Cerebral, Körperbetont, Lang anhaltend, Ausgewogen',
-      aroma: 'Beerig, Würzig',
+      effects: 'Cerebral, körperbetont, lang anhaltend, ausgewogen',
+      aroma: 'Beerig, würzig',
       terpenes: 'Caryophyllen, Linalool, Myrcen'
     }
   ];
-  additional.forEach(p => {
-    db.get('SELECT id FROM products WHERE title = ?', [p.title], (err, row) => {
-      if (err) {
-        console.error('Fehler beim Prüfen der Sorte', p.title, err.message);
-        return;
-      }
-      if (!row) {
-        db.run(
-          'INSERT INTO products (title, description, price, image, thc, cbd, effects, aroma, terpenes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-          [p.title, p.description, p.price, p.image, p.thc, p.cbd, p.effects, p.aroma, p.terpenes],
-          err2 => {
-            if (err2) {
-              console.error('Fehler beim Einfügen der Sorte', p.title, err2.message);
-            }
-          }
-        );
-      }
-    });
-  });
-}
 
-// Insert an admin user if not present. We perform this on every
-// startup; if the row already exists, we skip insertion.
-async function ensureAdmin() {
-  return new Promise((resolve, reject) => {
-    db.get('SELECT id FROM users WHERE email = ?', ['Admin'], async (err, row) => {
-      if (err) return reject(err);
-      if (!row) {
-        try {
-          const hash = await bcrypt.hash('admin1234', 10);
-          db.run(
-            'INSERT INTO users (email, password_hash, is_admin, approved) VALUES (?, ?, 1, 1)',
-            ['Admin', hash],
-            err2 => {
-              if (err2) return reject(err2);
-              resolve();
-            }
-          );
-        } catch (e) {
-          reject(e);
+  // Vor dem Einfügen prüfen wir, ob die Metadaten-Spalten (thc, cbd, effects,
+  // aroma, terpenes) bereits existieren. Falls nicht, werden nur die
+  // Standardfelder (title, description, price, image) benutzt, damit keine
+  // SQLITE_ERROR-Meldungen entstehen, wenn eine ältere Datenbank ohne
+  // diese Spalten verwendet wird.
+  db.all('PRAGMA table_info(products)', (err, rows) => {
+    if (err) {
+      console.error('Fehler beim Lesen der Tabellenstruktur von products', err.message);
+      return;
+    }
+    const cols = rows.map(r => r.name);
+    const hasMetadata =
+      cols.includes('thc') &&
+      cols.includes('cbd') &&
+      cols.includes('effects') &&
+      cols.includes('aroma') &&
+      cols.includes('terpenes');
+
+    additional.forEach(p => {
+      db.get('SELECT id FROM products WHERE title = ?', [p.title], (err2, row) => {
+        if (err2) {
+          console.error('Fehler beim Prüfen der Sorte', p.title, err2.message);
+          return;
         }
-      } else {
-        resolve();
-      }
+        if (!row) {
+          let sql;
+          let params;
+          if (hasMetadata) {
+            sql =
+              'INSERT INTO products (title, description, price, image, thc, cbd, effects, aroma, terpenes) ' +
+              'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
+            params = [p.title, p.description, p.price, p.image, p.thc, p.cbd, p.effects, p.aroma, p.terpenes];
+          } else {
+            sql =
+              'INSERT INTO products (title, description, price, image) ' +
+              'VALUES (?, ?, ?, ?)';
+            params = [p.title, p.description, p.price, p.image];
+          }
+          db.run(sql, params, err3 => {
+            if (err3) {
+              console.error('Fehler beim Einfügen der Sorte', p.title, err3.message);
+            }
+          });
+        }
+      });
     });
   });
 }
-
 // Populate demo products if the table is empty. Uses simple
 // placeholder products; feel free to modify or extend.
 async function ensureProducts() {
