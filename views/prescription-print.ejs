@@ -20,7 +20,7 @@
       position: absolute;
       font-size: 3mm;
       line-height: 1;
-      white-space: nowrap;
+      white-space: pre-line;
     }
     .btn {
       display: inline-block;
@@ -34,6 +34,15 @@
       box-shadow: 0 0 10px #00ff99, 0 0 20px #ff00ff;
       text-decoration: none;
     }
+
+    @media print {
+      .prescription-container {
+        background: none !important;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+    }
+
   </style>
 </head>
 <body>

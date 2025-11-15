@@ -177,6 +177,11 @@ function ensurePrescriptionTable() {
     user_id INTEGER,
     insurance TEXT,
     patient_name TEXT,
+    patient_first_name TEXT,
+    patient_last_name TEXT,
+    patient_address TEXT,
+    patient_zip TEXT,
+    patient_city TEXT,
     patient_birth TEXT,
     insurance_number TEXT,
     doctor_practice TEXT,
@@ -189,23 +194,84 @@ function ensurePrescriptionTable() {
   )`);
 }
 
+// Extend the prescriptions table with additional patient address/name fields
+// if they do not already exist. This keeps existing Datenbanken kompatibel.
+function extendPrescriptionSchema() {
+  const desiredColumns = [
+    'patient_first_name',
+    'patient_last_name',
+    'patient_address',
+    'patient_zip',
+    'patient_city'
+  ];
+  db.all('PRAGMA table_info(prescriptions)', (err, rows) => {
+    if (err) {
+      console.error('Error reading prescriptions table info', err.message);
+      return;
+    }
+    const existing = rows.map(r => r.name);
+    desiredColumns.forEach(col => {
+      if (!existing.includes(col)) {
+        db.run(
+          `ALTER TABLE prescriptions ADD COLUMN ${col} TEXT`,
+          [],
+          err2 => {
+            if (err2 && !/duplicate column name/i.test(err2.message)) {
+              console.error('Error adding column to prescriptions', col, err2.message);
+            }
+          }
+        );
+      }
+    });
+  });
+}
+
+
+// Helper: format a Date as 'tt.mm.jj'.
+function formatDateGermanShort(date) {
+  const day = String(date.getDate()).padStart(2, '0');
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const year = String(date.getFullYear()).slice(-2);
+  return `${day}.${month}.${year}`;
+}
+
+// Helper: determine the Ausstellungsdatum. An Montagen bis Freitagen ist es
+// der aktuelle Tag. Fällt die Erstellung auf Samstag oder Sonntag, wird
+// der letzte Freitag gewählt.
+function calculateIssueDate() {
+  const now = new Date();
+  const date = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const day = date.getDay(); // 0 = Sonntag, 6 = Samstag
+  if (day === 6) {
+    // Samstag -> Freitag
+    date.setDate(date.getDate() - 1);
+  } else if (day === 0) {
+    // Sonntag -> Freitag
+    date.setDate(date.getDate() - 2);
+  }
+  return formatDateGermanShort(date);
+}
+
+// Helper: baue den Text für eine Cannabis-Verordnung aus Grammzahl und Sorte.
+function buildCannabisMedicationLine(amount, strain) {
+  if (!amount || !strain) return '';
+  const grams = String(amount).trim().replace(',', '.');
+  if (!grams) return '';
+  const cleanedStrain = strain.trim();
+  if (!cleanedStrain) return '';
+  return `${grams}g Cannabisblüten, ${cleanedStrain}, unzerkleinert, verdampfen/inhalieren, Dosierung: ED 0,01g TD 1,00g`;
+}
+
 // Seed additional cannabis products if they do not already exist. This function
 // inserts three predefined strains into the products table along with
 // descriptive metadata and placeholder images. If a product with the same
 // title exists, it will not be duplicated.
 function ensureAdditionalProducts() {
-  /*
-   * Stellt sicher, dass die zusätzlichen Metadaten-Spalten in der
-   * products-Tabelle existieren, bevor die neuen Sorten eingefügt
-   * werden. Dadurch vermeiden wir Fehler wie
-   * "table products has no column named thc" bei bereits
-   * vorhandenen Datenbanken.
-   */
   const additional = [
     {
       title: 'Remexian Grape Galena 27/1',
       description:
-        'Grape Galena ist eine indica-dominante Sorte mit 27% THC. Wirkung: relaxed, schläfrig, glücklich; Aroma: fruchtig, blumig; Terpene: Beta‑Myrcen, Limonen, Alpha‑Humulen, Linalool, Selinadiene.',
+        'Grape Galena ist eine indica-dominante Sorte mit 27% THC und <1% CBD. Sie ist unbestrahlt und kombiniert OG Kush × Lost Sailor × Platinum Kush. Aromen: fruchtig, blumig; Effekte: relaxed, schläfrig, glücklich; Terpene: Beta‑Myrcen, Limonen, Alpha‑Humulen, Linalool, Selinadiene.',
       price: 5.69,
       image: 'remexian.jpg',
       thc: '27%',
@@ -217,8 +283,8 @@ function ensureAdditionalProducts() {
     {
       title: 'Peace Naturals GMO Cookies 31/1',
       description:
-        'GMO Cookies ist eine indica-dominante Sorte mit 31% THC. Wirkung: euphorisch, schläfrig, relaxed; Aroma: Diesel; Terpene: Limonen, Alpha-Caryophyllen, Myrcen.',
-      price: 5.49,
+        'GMO Cookies (Girl Scout Cookies × Chemdawg) hat 31% THC und <1% CBD. Die Sorte ist eine starke Indica und unbestrahlt. Aroma: Diesel; Effekte: euphorisch, schläfrig, relaxed; Terpene: Limonen, Alpha‑Caryophyllen, Myrcen.',
+      price: 6.3,
       image: 'gmo_cookies.jpg',
       thc: '31%',
       cbd: '<1%',
@@ -229,7 +295,7 @@ function ensureAdditionalProducts() {
     {
       title: 'AMICI Blueberry Headband 22/1',
       description:
-        'Blueberry Headband ist eine indica-dominante Hybride mit 22% THC. Wirkung: cerebral, körperbetont, lang anhaltend, ausgewogen; Aroma: beerig, würzig; Terpene: Caryophyllen, Linalool, Myrcen.',
+        'Blueberry Headband ist eine indica-dominante Hybride mit 22% THC und <1% CBD. Sie ist unbestrahlt und wird unter EU‑GMP‑Bedingungen in Portugal produziert. Das Aroma ist beerig‑würzig mit Noten von Mango, Thymian und Zitrusfrüchten. Effekte: cerebral, körperbetont, lang anhaltend, ausgewogen; Terpene: Caryophyllen, Linalool, Myrcen.',
       price: 5.5,
       image: 'blueberry_headband.jpg',
       thc: '22%',
@@ -239,64 +305,24 @@ function ensureAdditionalProducts() {
       terpenes: 'Caryophyllen, Linalool, Myrcen'
     }
   ];
-
-  const desiredColumns = ['thc', 'cbd', 'effects', 'aroma', 'terpenes'];
-
-  db.all('PRAGMA table_info(products)', (err, rows) => {
-    if (err) {
-      console.error('Fehler beim Lesen der products-Tabelleninfo', err.message);
-      return;
-    }
-
-    const existing = rows.map(r => r.name);
-    const missing = desiredColumns.filter(col => !existing.includes(col));
-
-    const addNextColumn = index => {
-      if (index >= missing.length) {
-        // Alle Spalten vorhanden -> jetzt Sorten einfügen.
-        seedAdditionalProducts();
+  additional.forEach(p => {
+    db.get('SELECT id FROM products WHERE title = ?', [p.title], (err, row) => {
+      if (err) {
+        console.error('Fehler beim Prüfen der Sorte', p.title, err.message);
         return;
       }
-      const col = missing[index];
-      db.run(
-        `ALTER TABLE products ADD COLUMN ${col} TEXT DEFAULT ''`,
-        [],
-        err2 => {
-          if (err2 && !/duplicate column name/i.test(err2.message)) {
-            console.error('Fehler beim Hinzufügen der Spalte', col, err2.message);
+      if (!row) {
+        db.run(
+          'INSERT INTO products (title, description, price, image, thc, cbd, effects, aroma, terpenes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [p.title, p.description, p.price, p.image, p.thc, p.cbd, p.effects, p.aroma, p.terpenes],
+          err2 => {
+            if (err2) {
+              console.error('Fehler beim Einfügen der Sorte', p.title, err2.message);
+            }
           }
-          addNextColumn(index + 1);
-        }
-      );
-    };
-
-    const seedAdditionalProducts = () => {
-      additional.forEach(p => {
-        db.get('SELECT id FROM products WHERE title = ?', [p.title], (err3, row) => {
-          if (err3) {
-            console.error('Fehler beim Prüfen der Sorte', p.title, err3.message);
-            return;
-          }
-          if (!row) {
-            db.run(
-              'INSERT INTO products (title, description, price, image, thc, cbd, effects, aroma, terpenes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
-              [p.title, p.description, p.price, p.image, p.thc, p.cbd, p.effects, p.aroma, p.terpenes],
-              err4 => {
-                if (err4) {
-                  console.error('Fehler beim Einfügen der Sorte', p.title, err4.message);
-                }
-              }
-            );
-          }
-        });
-      });
-    };
-
-    if (missing.length === 0) {
-      seedAdditionalProducts();
-    } else {
-      addNextColumn(0);
-    }
+        );
+      }
+    });
   });
 }
 
@@ -375,14 +401,13 @@ if (typeof ensureAdmin === 'function') {
 }
 if (typeof ensureProducts === 'function') {
   ensureProducts().catch(err => console.error(err));
-}
-
 
 // Ensure the prescriptions table exists and seed additional cannabis
 // products (e.g. Remexian Grape Galena, Peace Naturals GMO Cookies, Blueberry
 // Headband) if they are not already present. These calls run once at
 // startup to upgrade the schema and populate the demo data.
 ensurePrescriptionTable();
+extendPrescriptionSchema();
 ensureAdditionalProducts();
 
 // Set the view engine to EJS and configure express static files.
@@ -861,39 +886,95 @@ app.get('/prescriptions/new', requireAuth, (req, res) => {
 
 app.post('/prescriptions/new', requireAuth, (req, res) => {
   const {
-    insurance,
-    patient_name,
+    patient_first_name,
+    patient_last_name,
+    patient_address,
+    patient_zip,
+    patient_city,
     patient_birth,
     insurance_number,
     doctor_practice,
     doctor_number,
-    date,
-    medication1,
-    medication2,
-    medication3
+    medication1_amount,
+    medication1_strain,
+    medication2_amount,
+    medication2_strain,
+    medication3_amount,
+    medication3_strain,
+    fee_confirmed
   } = req.body;
+
   const errors = [];
-  if (!insurance || !patient_name || !patient_birth || !doctor_number || !date) {
-    errors.push({ msg: 'Bitte füllen Sie alle Pflichtfelder aus.' });
+
+  // Pflichtfelder: Name, Nachname, Adresse, Geburtsdatum
+  if (!patient_first_name || !patient_last_name || !patient_address || !patient_birth) {
+    errors.push({ msg: 'Bitte füllen Sie Name, Nachname, Adresse und Geburtsdatum aus.' });
   }
+
+  if (!doctor_number) {
+    errors.push({ msg: 'Bitte geben Sie die Arzt-Nr. ein.' });
+  }
+
+  if (!patient_zip || !patient_city) {
+    errors.push({ msg: 'Bitte geben Sie Postleitzahl und Wohnort ein.' });
+  }
+
+  if (!fee_confirmed) {
+    errors.push({ msg: 'Bitte bestätigen Sie die Kosten von 10 € für die Erstellung des Privatrezeptes.' });
+  }
+
   if (errors.length > 0) {
     return res.render('prescription-form', { errors });
   }
+
+  const insurance = 'Privat';
+
+  // Geburtsdatum ins Format tt.mm.jj bringen
+  let formattedBirth = '';
+  if (patient_birth) {
+    const birthDate = new Date(patient_birth);
+    if (!isNaN(birthDate)) {
+      formattedBirth = formatDateGermanShort(birthDate);
+    } else {
+      formattedBirth = patient_birth;
+    }
+  }
+
+  const issueDate = calculateIssueDate();
+
+  // zusammengesetzter Name/Adresse-Block für das Rezept
+  const zipWithCountry = `D-${(patient_zip || '').trim()}`;
+  const patientBlock = `${(patient_last_name || '').trim()}, ${(patient_first_name || '').trim()}`.trim() +
+    '\n' +
+    (patient_address || '').trim() +
+    '\n' +
+    `${zipWithCountry} ${(patient_city || '').trim()}`.trim();
+
+  // Text für die drei Verordnungen bauen
+  const medication1 = buildCannabisMedicationLine(medication1_amount, medication1_strain);
+  const medication2 = buildCannabisMedicationLine(medication2_amount, medication2_strain);
+  const medication3 = buildCannabisMedicationLine(medication3_amount, medication3_strain);
+
   db.run(
-    `INSERT INTO prescriptions (user_id, insurance, patient_name, patient_birth, insurance_number, doctor_practice, doctor_number, date, medication1, medication2, medication3)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO prescriptions (user_id, insurance, patient_name, patient_first_name, patient_last_name, patient_address, patient_zip, patient_city, patient_birth, insurance_number, doctor_practice, doctor_number, date, medication1, medication2, medication3)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       req.session.user.id,
-      insurance.trim(),
-      patient_name.trim(),
-      patient_birth.trim(),
+      insurance,
+      patientBlock,
+      patient_first_name.trim(),
+      patient_last_name.trim(),
+      patient_address.trim(),
+      patient_zip.trim(),
+      patient_city.trim(),
+      formattedBirth,
       insurance_number ? insurance_number.trim() : null,
       doctor_practice ? doctor_practice.trim() : null,
       doctor_number.trim(),
-      date.trim(),
-      medication1 ? medication1.trim() : null,
-      medication2 ? medication2.trim() : null,
-      medication3 ? medication3.trim() : null
+      issueDate,
+      medication1 || null,
+      medication2 || null,
+      medication3 || null
     ],
     function (err) {
       if (err) {
@@ -901,12 +982,11 @@ app.post('/prescriptions/new', requireAuth, (req, res) => {
         return res.render('prescription-form', { errors: [{ msg: 'Fehler beim Speichern des Rezepts.' }] });
       }
       // After saving the prescription, do not show it to the user.
-      // Instead, redirect to a success page so that only admins can print the prescription.
+      // Stattdessen Weiterleitung auf eine Erfolgsseite, damit nur Admins drucken können.
       res.redirect('/prescriptions/success');
     }
   );
 });
-
 // Print view for a prescription. Only admins may access this route.
 app.get('/prescriptions/:id/print', requireAdmin, (req, res) => {
   const id = req.params.id;

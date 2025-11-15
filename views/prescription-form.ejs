@@ -41,18 +41,32 @@
       <% } %>
       <form method="post" action="/prescriptions/new" class="form">
         <input type="hidden" name="_csrf" value="<%= csrfToken %>" />
+
         <div class="form-group">
-          <label for="insurance">Krankenkasse/Kostenträger*</label>
-          <input type="text" id="insurance" name="insurance" required />
+          <label for="patient_last_name">Nachname des Versicherten*</label>
+          <input type="text" id="patient_last_name" name="patient_last_name" required />
         </div>
         <div class="form-group">
-          <label for="patient_name">Name des Versicherten*</label>
-          <input type="text" id="patient_name" name="patient_name" required />
+          <label for="patient_first_name">Vorname des Versicherten*</label>
+          <input type="text" id="patient_first_name" name="patient_first_name" required />
+        </div>
+        <div class="form-group">
+          <label for="patient_address">Adresse (Straße und Hausnummer)*</label>
+          <input type="text" id="patient_address" name="patient_address" required />
+        </div>
+        <div class="form-group">
+          <label for="patient_zip">Postleitzahl*</label>
+          <input type="text" id="patient_zip" name="patient_zip" required />
+        </div>
+        <div class="form-group">
+          <label for="patient_city">Wohnort*</label>
+          <input type="text" id="patient_city" name="patient_city" required />
         </div>
         <div class="form-group">
           <label for="patient_birth">Geburtsdatum*</label>
           <input type="date" id="patient_birth" name="patient_birth" required />
         </div>
+
         <div class="form-group">
           <label for="insurance_number">Versicherten-Nr.</label>
           <input type="text" id="insurance_number" name="insurance_number" />
@@ -65,28 +79,48 @@
           <label for="doctor_number">Arzt-Nr.*</label>
           <input type="text" id="doctor_number" name="doctor_number" required />
         </div>
-        <div class="form-group">
-          <label for="date">Datum*</label>
-          <input type="date" id="date" name="date" required />
-        </div>
+
         <div class="form-section">
           <h3>Verordnungen</h3>
+          <p>Bitte wählen Sie nur Grammanzahl und Sorte. Der Text wird automatisch wie gefordert aufgebaut.</p>
+
           <div class="form-group">
-            <label for="medication1">1. Verordnung</label>
-            <input type="text" id="medication1" name="medication1" />
+            <label for="medication1_strain">1. Verordnung</label>
+            <div class="inline-group">
+              <input type="number" step="0.01" min="0.01" id="medication1_amount" name="medication1_amount" placeholder="Menge in g" />
+              <input type="text" id="medication1_strain" name="medication1_strain" placeholder="Sorte" />
+            </div>
           </div>
+
           <div class="form-group">
-            <label for="medication2">2. Verordnung</label>
-            <input type="text" id="medication2" name="medication2" />
+            <label for="medication2_strain">2. Verordnung</label>
+            <div class="inline-group">
+              <input type="number" step="0.01" min="0.01" id="medication2_amount" name="medication2_amount" placeholder="Menge in g" />
+              <input type="text" id="medication2_strain" name="medication2_strain" placeholder="Sorte" />
+            </div>
           </div>
+
           <div class="form-group">
-            <label for="medication3">3. Verordnung</label>
-            <input type="text" id="medication3" name="medication3" />
+            <label for="medication3_strain">3. Verordnung</label>
+            <div class="inline-group">
+              <input type="number" step="0.01" min="0.01" id="medication3_amount" name="medication3_amount" placeholder="Menge in g" />
+              <input type="text" id="medication3_strain" name="medication3_strain" placeholder="Sorte" />
+            </div>
           </div>
         </div>
+
+        <div class="form-group">
+          <label>
+            <input type="checkbox" name="fee_confirmed" value="1" required />
+            Ich bestätige, dass für die Erstellung dieses Privatrezeptes 10&nbsp;€ anfallen, die bei Abholung zu bezahlen sind.
+          </label>
+        </div>
+
+        <p><strong>Hinweis:</strong> Der Kostenträger wird automatisch mit „Privat“ gesetzt. Das Ausstellungsdatum ist immer der letzte Werktag (bei Erstellung am Samstag oder Sonntag der vorherige Freitag). Datumsangaben werden im Format tt.mm.jj gedruckt.</p>
+
         <button type="submit" class="btn">Rezept erstellen</button>
         <a href="<%= currentUser && currentUser.is_admin ? '/admin' : '/showroom' %>" class="btn back-btn">Abbrechen</a>
-      </form>
+      </form></form>
     </div>
   </main>
   <footer class="footer">
