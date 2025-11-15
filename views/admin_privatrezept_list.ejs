@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>WannCannaMED – Admin Privatrezept</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="branding">
+                <h1>WannCannaMED</h1>
+                <p class="subtitle">Adminbereich – Privatrezept</p>
+            </div>
+            <nav class="nav">
+                <a href="/" class="nav-link">Sorten</a>
+                <a href="/privatrezept" class="nav-link">Privatrezept</a>
+                <a href="/admin/privatrezept" class="nav-link nav-link-active">Admin</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="card">
+            <div class="card-header">
+                <h2>Privatrezept-Einträge</h2>
+                <p>Ausgefüllte Privatrezept-Fragebögen mit Vorschau- und Druckmöglichkeit.</p>
+            </div>
+
+            <% if (!entries || !entries.length) { %>
+                <p>Es sind noch keine Privatrezept-Datensätze vorhanden.</p>
+            <% } else { %>
+                <div class="admin-table-wrapper">
+                    <table class="admin-table">
+                        <thead>
+                            <tr>
+                                <th>ID</th>
+                                <th>Rezeptdatum</th>
+                                <th>Patient</th>
+                                <th>Indikation</th>
+                                <th>Medikation</th>
+                                <th>Erfasst am</th>
+                                <th>Aktion</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <% entries.forEach(function(e) { %>
+                                <tr>
+                                    <td><%= e.id %></td>
+                                    <td><%= e.prescriptionDateDisplay %></td>
+                                    <td><%= e.first_name %> <%= e.last_name %></td>
+                                    <td>
+                                        <%= e.indication %>
+                                        <% if (e.indication_other) { %>
+                                            – <%= e.indication_other %>
+                                        <% } %>
+                                    </td>
+                                    <td><%= e.medication_short %></td>
+                                    <td><%= e.createdAtDisplay %></td>
+                                    <td>
+                                        <a href="/admin/privatrezept/<%= e.id %>" class="btn btn-small">Vorschau / Druck</a>
+                                    </td>
+                                </tr>
+                            <% }); %>
+                        </tbody>
+                    </table>
+                </div>
+            <% } %>
+        </section>
+    </main>
+</body>
+</html>

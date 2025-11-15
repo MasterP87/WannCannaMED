@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>WannCannaMED – Privatrezept</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="branding">
+                <h1>WannCannaMED</h1>
+                <p class="subtitle">Privatrezept-Assistent</p>
+            </div>
+            <nav class="nav">
+                <a href="/" class="nav-link">Sorten</a>
+                <a href="/privatrezept" class="nav-link nav-link-active">Privatrezept</a>
+                <a href="/admin/privatrezept" class="nav-link">Admin</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="card">
+            <header class="card-header">
+                <h2>Minimaler Fragebogen für ein Privatrezept</h2>
+                <p>Alle Angaben werden persistent in der WannCannaMED-Datenbank gespeichert.</p>
+            </header>
+
+            <% if (errors && errors.length) { %>
+                <div class="alert alert-error">
+                    <strong>Bitte prüfen:</strong>
+                    <ul>
+                        <% errors.forEach(function(err) { %>
+                            <li><%= err %></li>
+                        <% }); %>
+                    </ul>
+                </div>
+            <% } %>
+
+            <form method="post" action="/privatrezept" class="form">
+                <fieldset>
+                    <legend>Patientendaten</legend>
+
+                    <div class="form-row">
+                        <label for="first_name">Vorname*</label>
+                        <input
+                            type="text"
+                            id="first_name"
+                            name="first_name"
+                            required
+                            value="<%= formData && formData.first_name ? formData.first_name : '' %>"
+                        >
+                    </div>
+
+                    <div class="form-row">
+                        <label for="last_name">Nachname*</label>
+                        <input
+                            type="text"
+                            id="last_name"
+                            name="last_name"
+                            required
+                            value="<%= formData && formData.last_name ? formData.last_name : '' %>"
+                        >
+                    </div>
+
+                    <div class="form-row inline">
+                        <div>
+                            <label for="street">Straße*</label>
+                            <input
+                                type="text"
+                                id="street"
+                                name="street"
+                                required
+                                value="<%= formData && formData.street ? formData.street : '' %>"
+                            >
+                        </div>
+                        <div class="small">
+                            <label for="house_number">Hausnummer*</label>
+                            <input
+                                type="text"
+                                id="house_number"
+                                name="house_number"
+                                required
+                                value="<%= formData && formData.house_number ? formData.house_number : '' %>"
+                            >
+                        </div>
+                    </div>
+
+                    <div class="form-row inline">
+                        <div class="small">
+                            <label for="zip_code">Postleitzahl*</label>
+                            <input
+                                type="text"
+                                id="zip_code"
+                                name="zip_code"
+                                required
+                                value="<%= formData && formData.zip_code ? formData.zip_code : '' %>"
+                            >
+                        </div>
+                        <div>
+                            <label for="city">Wohnort*</label>
+                            <input
+                                type="text"
+                                id="city"
+                                name="city"
+                                required
+                                value="<%= formData && formData.city ? formData.city : '' %>"
+                            >
+                        </div>
+                    </div>
+
+
+                    <div class="form-row">
+                        <label for="birthdate">Geburtsdatum* (TT.MM.JJJJ)</label>
+                        <input
+                            type="date"
+                            id="birthdate"
+                            name="birthdate"
+                            required
+                            value="<%= formData && formData.birthdate ? formData.birthdate : '' %>"
+                        >
+                    </div>
+
+                    <div class="form-row readonly">
+                        <label>Rezeptdatum (letzter Werktag)</label>
+                        <div class="readonly-value"><%= prescriptionDateDisplay %></div>
+                    </div>
+
+                    <div class="form-row readonly">
+                        <label>Kostenträger</label>
+                        <div class="readonly-value">Privat</div>
+                        <input type="hidden" name="kostentraeger" value="Privat">
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Medizinischer Hintergrund</legend>
+
+                    <div class="form-row">
+                        <label>Grund für das Privatrezept*</label>
+                        <div class="options">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="indication"
+                                    value="Schmerzen"
+                                    <%= formData && formData.indication === 'Schmerzen' ? 'checked' : '' %>
+                                >
+                                Schmerzen
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="indication"
+                                    value="Schlaflosigkeit"
+                                    <%= formData && formData.indication === 'Schlaflosigkeit' ? 'checked' : '' %>
+                                >
+                                Schlaflosigkeit
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="indication"
+                                    value="Stress"
+                                    <%= formData && formData.indication === 'Stress' ? 'checked' : '' %>
+                                >
+                                Stress
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="indication"
+                                    value="Appetitlosigkeit"
+                                    <%= formData && formData.indication === 'Appetitlosigkeit' ? 'checked' : '' %>
+                                >
+                                Appetitlosigkeit
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="indication"
+                                    value="Sonstiges"
+                                    <%= formData && formData.indication === 'Sonstiges' ? 'checked' : '' %>
+                                >
+                                Sonstiges / ähnlich
+                            </label>
+                        </div>
+                    </div>
+
+                    <div class="form-row">
+                        <label for="indication_other">
+                            Falls „Sonstiges / ähnlich“: kurze Beschreibung
+                        </label>
+                        <textarea
+                            id="indication_other"
+                            name="indication_other"
+                            rows="2"
+                        ><%= formData && formData.indication_other ? formData.indication_other : '' %></textarea>
+                    </div>
+
+                    <div class="form-row">
+                        <label>Bisherige Cannabis-Verschreibung?</label>
+                        <div class="options">
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="previous_cannabis"
+                                    value="ja"
+                                    <%= !formData || formData.previous_cannabis === 'ja' ? 'checked' : '' %>
+                                >
+                                Ja
+                            </label>
+                            <label>
+                                <input
+                                    type="radio"
+                                    name="previous_cannabis"
+                                    value="nein"
+                                    <%= formData && formData.previous_cannabis === 'nein' ? 'checked' : '' %>
+                                >
+                                Nein
+                            </label>
+                        </div>
+                    </div>
+                </fieldset>
+
+                <fieldset>
+                    <legend>Medikation (wird automatisch formatiert)</legend>
+
+                    <div class="form-row inline">
+                        <div>
+                            <label for="medication_grams">Menge in Gramm*</label>
+                            <input
+                                type="number"
+                                id="medication_grams"
+                                name="medication_grams"
+                                step="0.01"
+                                min="0"
+                                required
+                                value="<%= formData && formData.medication_grams ? formData.medication_grams : '' %>"
+                            >
+                        </div>
+                        <div>
+                            <label for="medication_strain">Cannabissorte*</label>
+                            <input
+                                type="text"
+                                id="medication_strain"
+                                name="medication_strain"
+                                required
+                                value="<%= formData && formData.medication_strain ? formData.medication_strain : '' %>"
+                            >
+                        </div>
+                    </div>
+
+                    <p class="hint">
+                        Der Medikationstext wird automatisch erzeugt als:<br>
+                        <code>Xg Cannabisblüten, „SorteX“, unzerkleinert, verdampfen/inhalieren,
+                        Dosierung: ED 0,01g TD 1,00g</code>
+                    </p>
+                </fieldset>
+
+<fieldset>
+    <legend>Kostenhinweis</legend>
+
+    <p class="hint">
+        Die Erstellung dieses Privatrezepts kostet <strong>10,00&nbsp;€</strong>.
+        Die Gebühr ist bei Abholung des Rezepts in der Praxis zu bezahlen.
+    </p>
+
+    <div class="form-row">
+        <label class="options">
+            <input
+                type="checkbox"
+                id="cost_confirm"
+                name="cost_confirm"
+                value="ja"
+                <%= formData && formData.cost_confirm ? 'checked' : '' %>
+            >
+            <span>
+                Ich bestätige, dass mir die Kosten in Höhe von 10,00&nbsp;€ bekannt sind
+                und ich diese bei Abholung bezahle.
+            </span>
+        </label>
+    </div>
+</fieldset>
+
+
+                <div class="form-actions">
+                    <a href="/" class="btn btn-secondary">Zurück</a>
+                    <button type="submit" class="btn">Privatrezept-Daten speichern</button>
+                </div>
+            </form>
+        </section>
+    </main>
+</body>
+</html>

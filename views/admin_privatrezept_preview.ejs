@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>WannCannaMED – Privatrezept Vorschau</title>
+    <link rel="stylesheet" href="/css/style.css">
+    <script>
+        function startPrint() {
+            window.print();
+        }
+    </script>
+</head>
+<body>
+    <header class="header no-print">
+        <div class="header-inner">
+            <div class="branding">
+                <h1>WannCannaMED</h1>
+                <p class="subtitle">Adminbereich – Privatrezept Vorschau</p>
+            </div>
+            <nav class="nav">
+                <a href="/" class="nav-link">Sorten</a>
+                <a href="/privatrezept" class="nav-link">Privatrezept</a>
+                <a href="/admin/privatrezept" class="nav-link nav-link-active">Admin</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="card card-print">
+            <div class="card-header no-print">
+                <h2>Vorschau Privatrezept</h2>
+                <p>
+                    Diese Ansicht zeigt nur den Textinhalt, wie er auf ein Blanko-Privatrezept
+                    gedruckt werden soll. Über den Druck-Button wird nur dieser Text ausgegeben.
+                </p>
+            </div>
+
+            <div class="no-print" style="margin-bottom: 1rem;">
+                <button class="btn" type="button" onclick="startPrint()">Druck starten</button>
+                <a href="/admin/privatrezept" class="btn btn-secondary">Zurück zur Übersicht</a>
+            </div>
+
+            <!-- Nur dieser Bereich wird im Drucklayout ausgegeben -->
+            <div class="print-page">
+                <div class="print-field pos-kostentraeger">
+                    <%= prescription.kostentraeger %>
+                </div>
+                <div class="print-field pos-name">
+                    <%= prescription.last_name %>, <%= prescription.first_name %>
+                </div>
+                <div class="print-field pos-address">
+                    <%= prescription.street %> <%= prescription.house_number %>
+                </div>
+                <div class="print-field pos-zipcity">
+                    D-<%= prescription.zip_code %> <%= prescription.city %>
+                </div>
+                <div class="print-field pos-birthdate">
+                    <%= birthdateDisplay %>
+                </div>
+                <div class="print-field pos-prescription-date">
+                    <%= prescriptionDateDisplay %>
+                </div>
+                <div class="print-field pos-medication">
+                    <%= prescription.medication_text %>
+                </div>
+                <div class="print-field pos-indication">
+                    Indikation: <%= prescription.indication %>
+                    <% if (prescription.indication_other) { %>
+                        – <%= prescription.indication_other %>
+                    <% } %>
+                </div>
+                <div class="print-field pos-previous">
+                    Frühere Cannabis-Verordnung: <%= prescription.previous_cannabis ? 'Ja' : 'Nein' %>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

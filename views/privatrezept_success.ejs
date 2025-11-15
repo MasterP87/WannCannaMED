@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>WannCannaMED – Privatrezept gespeichert</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="branding">
+                <h1>WannCannaMED</h1>
+                <p class="subtitle">Privatrezept-Assistent</p>
+            </div>
+            <nav class="nav">
+                <a href="/" class="nav-link">Sorten</a>
+                <a href="/privatrezept" class="nav-link nav-link-active">Privatrezept</a>
+                <a href="/admin/privatrezept" class="nav-link">Admin</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="card">
+            <header class="card-header">
+                <h2>Privatrezept – Daten gespeichert</h2>
+                <p>
+                    Die Angaben wurden erfolgreich und persistent in der Datenbank gesichert.
+                </p>
+            </header>
+
+            <dl class="summary">
+    <dt>Patient</dt>
+    <dd><%= prescription.first_name %> <%= prescription.last_name %></dd>
+
+    <dt>Adresse</dt>
+    <dd><%= prescription.street %> <%= prescription.house_number %>, D-<%= prescription.zip_code %> <%= prescription.city %></dd>
+
+    <dt>Geburtsdatum</dt>
+    <dd><%= birthdateDisplay %></dd>
+
+    <dt>Rezeptdatum (letzter Werktag)</dt>
+    <dd><%= prescriptionDateDisplay %></dd>
+
+    <dt>Kostenträger</dt>
+    <dd><%= prescription.kostentraeger %></dd>
+
+    <dt>Indikation</dt>
+    <dd>
+        <%= prescription.indication %>
+        <% if (prescription.indication_other) { %>
+            – <%= prescription.indication_other %>
+        <% } %>
+    </dd>
+
+    <dt>Medikation</dt>
+    <dd><%= prescription.medication_text %></dd>
+
+    <dt>Frühere Cannabis-Verschreibung</dt>
+    <dd><%= prescription.previous_cannabis ? 'Ja' : 'Nein' %></dd>
+
+    <dt>Kosten</dt>
+    <dd>10,00&nbsp;€ für die Erstellung des Privatrezepts, zahlbar bei Abholung.</dd>
+
+    <dt>Erfasst am</dt>
+    <dd><%= prescription.created_at %></dd>
+</dl><div class="form-actions">
+                <a href="/privatrezept" class="btn btn-secondary">Neues Privatrezept</a>
+                <a href="/" class="btn">Zur Startseite</a>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

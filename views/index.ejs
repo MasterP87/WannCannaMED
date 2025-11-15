@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <title>WannCannaMED – Aktuelle Sorten & Privatrezept</title>
+    <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+    <header class="header">
+        <div class="header-inner">
+            <div class="branding">
+                <h1>WannCannaMED</h1>
+                <p class="subtitle">Aktuelle Sorten & Privatrezept-Assistent</p>
+            </div>
+            <nav class="nav">
+                <a href="/" class="nav-link nav-link-active">Sorten</a>
+                <a href="/privatrezept" class="nav-link">Privatrezept</a>
+                <a href="/admin/privatrezept" class="nav-link">Admin</a>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="card">
+            <header class="card-header">
+                <h2>Aktuelle Sorten</h2>
+                <p>Die Daten werden persistent in der WannCannaMED-Datenbank gespeichert.</p>
+            </header>
+
+            <% if (error) { %>
+                <div class="alert alert-error"><%= error %></div>
+            <% } %>
+
+            <% if (!strains || !strains.length) { %>
+                <p>Aktuell sind keine Sorten hinterlegt.</p>
+            <% } else { %>
+                <div class="strain-grid">
+                    <% strains.forEach(function (strain) { %>
+                        <article class="strain-card <%= strain.in_stock ? '' : 'strain-card-out' %>">
+                            <h3><%= strain.name %></h3>
+                            <p class="strain-line">
+                                <span>THC:</span> <strong><%= strain.thc_value || '-' %></strong>
+                                &nbsp;|&nbsp;
+                                <span>CBD:</span> <strong><%= strain.cbd_value || '-' %></strong>
+                            </p>
+                            <p class="strain-desc">
+                                <%= strain.description || 'Keine Beschreibung hinterlegt.' %>
+                            </p>
+                            <p class="strain-meta">
+                                <span>Preis:</span>
+                                <% if (strain.price_per_gram != null) { %>
+                                    <strong><%= strain.price_per_gram.toFixed ? strain.price_per_gram.toFixed(2) : strain.price_per_gram %> €/g</strong>
+                                <% } else { %>
+                                    <strong>n. a.</strong>
+                                <% } %>
+                            </p>
+                            <p class="strain-stock">
+                                <% if (strain.in_stock) { %>
+                                    <span class="badge badge-success">auf Lager</span>
+                                <% } else { %>
+                                    <span class="badge badge-muted">nicht auf Lager</span>
+                                <% } %>
+                            </p>
+                        </article>
+                    <% }); %>
+                </div>
+            <% } %>
+        </section>
+
+        <section class="card card-accent">
+            <div class="card-split">
+                <div>
+                    <h2>Privatrezept für medizinisches Cannabis</h2>
+                    <p>
+                        Der Assistent erfasst alle erforderlichen Patientendaten, die Indikation
+                        und erzeugt automatisch den Medikationstext im Format:
+                    </p>
+                    <p class="example">
+                        „Xg Cannabisblüten, „SorteX“, unzerkleinert, verdampfen/inhalieren,
+                        Dosierung: ED 0,01g TD 1,00g“
+                    </p>
+                    <p>
+                        Du gibst nur Gramm-Zahl und Sorte an – der Rest wird automatisch generiert
+                        und auf dem Blanko-Privatrezept im richtigen Bereich platziert.
+                    </p>
+                </div>
+                <div class="card-actions">
+                    <a class="btn" href="/privatrezept">Privatrezept starten</a>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>
