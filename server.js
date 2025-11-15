@@ -401,6 +401,7 @@ if (typeof ensureAdmin === 'function') {
 }
 if (typeof ensureProducts === 'function') {
   ensureProducts().catch(err => console.error(err));
+}
 
 // Ensure the prescriptions table exists and seed additional cannabis
 // products (e.g. Remexian Grape Galena, Peace Naturals GMO Cookies, Blueberry
