@@ -300,8 +300,7 @@ function ensureAdditionalProducts() {
   });
 }
 
-// Insert an admin user if not present.
- We perform this on every
+// Insert an admin user if not present. We perform this on every
 // startup; if the row already exists, we skip insertion.
 async function ensureAdmin() {
   return new Promise((resolve, reject) => {
