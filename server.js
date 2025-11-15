@@ -189,50 +189,7 @@ function ensurePrescriptionTable() {
   )`);
 }
 
-// Seed additional cannabis products if they do not already ex
-
-function extendPrescriptionSchema() {
-  /*
-   * Dynamically extend the prescriptions table with additional columns
-   * required for the WannCannaMED Privatrezept-Workflow. Existing Daten
-   * bleiben erhalten; neue Spalten werden mit NULL oder einem sinnvollen
-   * Defaultwert angelegt.
-   */
-  const desired = [
-    { name: 'street',           type: 'TEXT',   defaultExpr: "''" },
-    { name: 'house_number',     type: 'TEXT',   defaultExpr: "''" },
-    { name: 'zip_code',         type: 'TEXT',   defaultExpr: "''" },
-    { name: 'city',             type: 'TEXT',   defaultExpr: "''" },
-    { name: 'indication',       type: 'TEXT',   defaultExpr: "''" },
-    { name: 'indication_other', type: 'TEXT',   defaultExpr: null },
-    { name: 'previous_cannabis',type: 'INTEGER',defaultExpr: '0' },
-    { name: 'medication_grams', type: 'REAL',   defaultExpr: null },
-    { name: 'medication_strain',type: 'TEXT',   defaultExpr: null },
-    { name: 'medication_text',  type: 'TEXT',   defaultExpr: null },
-    { name: 'cost_confirmed',   type: 'INTEGER',defaultExpr: '0' }
-  ];
-
-  db.all('PRAGMA table_info(prescriptions)', (err, rows) => {
-    if (err) {
-      console.error('Error reading prescriptions table info', err.message);
-      return;
-    }
-    const existing = rows.map(r => r.name);
-    desired.forEach(col => {
-      if (!existing.includes(col.name)) {
-        const defaultClause = col.defaultExpr != null ? ` DEFAULT ${col.defaultExpr}` : '';
-        const sql = `ALTER TABLE prescriptions ADD COLUMN ${col.name} ${col.type}${defaultClause}`;
-        db.run(sql, alterErr => {
-          if (alterErr) {
-            console.error('Error extending prescriptions table with', col.name, alterErr.message);
-          } else {
-            console.log('Added column to prescriptions table:', col.name);
-          }
-        });
-      }
-    });
-  });
-}
+// Seed additional cannabis products if they do not already exist. This function
 // inserts three predefined strains into the products table along with
 // descriptive metadata and placeholder images. If a product with the same
 // title exists, it will not be duplicated.
@@ -241,89 +198,88 @@ function ensureAdditionalProducts() {
     {
       title: 'Remexian Grape Galena 27/1',
       description:
-        'Indica-dominante Sorte mit ca. 27% THC.',
+        'Grape Galena ist eine indica-dominante Sorte mit 27% THC und <1% CBD. Sie ist unbestrahlt und kombiniert OG Kush × Lost Sailor × Platinum Kush. Aromen: fruchtig, blumig; Effekte: relaxed, schläfrig, glücklich; Terpene: Beta‑Myrcen, Limonen, Alpha‑Humulen, Linalool, Selinadiene.',
       price: 5.69,
       image: 'remexian.jpg',
       thc: '27%',
       cbd: '<1%',
-      effects: 'Relaxed, schläfrig, glücklich',
-      aroma: 'Fruchtig, blumig',
-      terpenes: 'Myrcen, Limonen, Humulen, Linalool, Selinadiene'
+      effects: 'Relaxed, Schläfrig, Glücklich',
+      aroma: 'Fruchtig, Blumen',
+      terpenes: 'Beta-Myrcen, Limonen, Alpha-Humulen, Linalool, Selinadiene'
     },
     {
       title: 'Peace Naturals GMO Cookies 31/1',
       description:
-        'Starke Indica-Sorte mit etwa 31% THC und <1% CBD.',
+        'GMO Cookies (Girl Scout Cookies × Chemdawg) hat 31% THC und <1% CBD. Die Sorte ist eine starke Indica und unbestrahlt. Aroma: Diesel; Effekte: euphorisch, schläfrig, relaxed; Terpene: Limonen, Alpha‑Caryophyllen, Myrcen.',
       price: 6.3,
       image: 'gmo_cookies.jpg',
       thc: '31%',
       cbd: '<1%',
-      effects: 'Euphorisch, schläfrig, relaxed',
+      effects: 'Euphorisch, Schläfrig, Relaxed',
       aroma: 'Diesel',
-      terpenes: 'Limonen, Caryophyllen, Myrcen'
+      terpenes: 'Limonen, Alpha-Caryophyllen, Myrcen'
     },
     {
       title: 'AMICI Blueberry Headband 22/1',
       description:
-        'Indica-dominante Hybride mit ca. 22% THC.',
+        'Blueberry Headband ist eine indica-dominante Hybride mit 22% THC und <1% CBD. Sie ist unbestrahlt und wird unter EU‑GMP‑Bedingungen in Portugal produziert. Das Aroma ist beerig‑würzig mit Noten von Mango, Thymian und Zitrusfrüchten. Effekte: cerebral, körperbetont, lang anhaltend, ausgewogen; Terpene: Caryophyllen, Linalool, Myrcen.',
       price: 5.5,
       image: 'blueberry_headband.jpg',
       thc: '22%',
       cbd: '<1%',
-      effects: 'Cerebral, körperbetont, lang anhaltend, ausgewogen',
-      aroma: 'Beerig, würzig',
+      effects: 'Cerebral, Körperbetont, Lang anhaltend, Ausgewogen',
+      aroma: 'Beerig, Würzig',
       terpenes: 'Caryophyllen, Linalool, Myrcen'
     }
   ];
-
-  // Vor dem Einfügen prüfen wir, ob die Metadaten-Spalten (thc, cbd, effects,
-  // aroma, terpenes) bereits existieren. Falls nicht, werden nur die
-  // Standardfelder (title, description, price, image) benutzt, damit keine
-  // SQLITE_ERROR-Meldungen entstehen, wenn eine ältere Datenbank ohne
-  // diese Spalten verwendet wird.
-  db.all('PRAGMA table_info(products)', (err, rows) => {
-    if (err) {
-      console.error('Fehler beim Lesen der Tabellenstruktur von products', err.message);
-      return;
-    }
-    const cols = rows.map(r => r.name);
-    const hasMetadata =
-      cols.includes('thc') &&
-      cols.includes('cbd') &&
-      cols.includes('effects') &&
-      cols.includes('aroma') &&
-      cols.includes('terpenes');
-
-    additional.forEach(p => {
-      db.get('SELECT id FROM products WHERE title = ?', [p.title], (err2, row) => {
-        if (err2) {
-          console.error('Fehler beim Prüfen der Sorte', p.title, err2.message);
-          return;
-        }
-        if (!row) {
-          let sql;
-          let params;
-          if (hasMetadata) {
-            sql =
-              'INSERT INTO products (title, description, price, image, thc, cbd, effects, aroma, terpenes) ' +
-              'VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)';
-            params = [p.title, p.description, p.price, p.image, p.thc, p.cbd, p.effects, p.aroma, p.terpenes];
-          } else {
-            sql =
-              'INSERT INTO products (title, description, price, image) ' +
-              'VALUES (?, ?, ?, ?)';
-            params = [p.title, p.description, p.price, p.image];
-          }
-          db.run(sql, params, err3 => {
-            if (err3) {
-              console.error('Fehler beim Einfügen der Sorte', p.title, err3.message);
+  additional.forEach(p => {
+    db.get('SELECT id FROM products WHERE title = ?', [p.title], (err, row) => {
+      if (err) {
+        console.error('Fehler beim Prüfen der Sorte', p.title, err.message);
+        return;
+      }
+      if (!row) {
+        db.run(
+          'INSERT INTO products (title, description, price, image, thc, cbd, effects, aroma, terpenes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)',
+          [p.title, p.description, p.price, p.image, p.thc, p.cbd, p.effects, p.aroma, p.terpenes],
+          err2 => {
+            if (err2) {
+              console.error('Fehler beim Einfügen der Sorte', p.title, err2.message);
             }
-          });
-        }
-      });
+          }
+        );
+      }
     });
   });
 }
+
+// Insert an admin user if not present. We perform this on every
+// startup; if the row already exists, we skip insertion.
+async function ensureAdmin() {
+  return new Promise((resolve, reject) => {
+    db.get('SELECT id FROM users WHERE email = ?', ['Admin'], async (err, row) => {
+      if (err) return reject(err);
+      if (!row) {
+        try {
+          const hash = await bcrypt.hash('admin1234', 10);
+          db.run(
+            'INSERT INTO users (email, password_hash, is_admin, approved) VALUES (?, ?, 1, 1)',
+            ['Admin', hash],
+            err2 => {
+              if (err2) return reject(err2);
+              resolve();
+            }
+          );
+        } catch (e) {
+          reject(e);
+        }
+      } else {
+        resolve();
+      }
+    });
+  });
+}
+
 // Populate demo products if the table is empty. Uses simple
 // placeholder products; feel free to modify or extend.
 async function ensureProducts() {
@@ -367,15 +323,19 @@ async function ensureProducts() {
 }
 
 // Immediately ensure the admin and demo products exist.
-ensureAdmin().catch(err => console.error(err));
-ensureProducts().catch(err => console.error(err));
+if (typeof ensureAdmin === 'function') {
+  ensureAdmin().catch(err => console.error(err));
+}
+if (typeof ensureProducts === 'function') {
+  ensureProducts().catch(err => console.error(err));
+}
+
 
 // Ensure the prescriptions table exists and seed additional cannabis
 // products (e.g. Remexian Grape Galena, Peace Naturals GMO Cookies, Blueberry
 // Headband) if they are not already present. These calls run once at
 // startup to upgrade the schema and populate the demo data.
 ensurePrescriptionTable();
-extendPrescriptionSchema();
 ensureAdditionalProducts();
 
 // Set the view engine to EJS and configure express static files.
@@ -441,53 +401,6 @@ function requireAdmin(req, res, next) {
     }
     next();
   });
-}
-
-
-// Helper functions for prescription dates and medication formatting
-function getLastWorkdayDate() {
-  const d = new Date();
-  const day = d.getDay(); // Sunday = 0, Monday = 1, ... Saturday = 6
-  if (day === 6) {
-    d.setDate(d.getDate() - 1); // Saturday -> Friday
-  } else if (day === 0) {
-    d.setDate(d.getDate() - 2); // Sunday -> Friday
-  }
-  return d;
-}
-
-function formatDateISO(date) {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const dayOfMonth = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${dayOfMonth}`;
-}
-
-function formatISOToDisplay(isoString) {
-  if (!isoString || typeof isoString !== 'string') return '';
-  const parts = isoString.split('-');
-  if (parts.length !== 3) return isoString;
-  const [year, month, day] = parts;
-  return `${day}.${month}.${String(year).slice(-2)}`;
-}
-
-function normalizeGrams(raw) {
-  if (raw == null) return NaN;
-  const str = String(raw).replace(',', '.').trim();
-  if (!str) return NaN;
-  const num = Number(str);
-  return Number.isFinite(num) ? num : NaN;
-}
-
-function formatGramsDE(num) {
-  try {
-    return num.toLocaleString('de-DE', {
-      minimumFractionDigits: 2,
-      maximumFractionDigits: 2
-    });
-  } catch (e) {
-    return String(num);
-  }
 }
 
 // Root route: redirect user depending on login status
@@ -896,171 +809,57 @@ app.get('/prescriptions/new', requireAuth, (req, res) => {
   if (!req.session.user.approved && !req.session.user.is_admin) {
     return res.render('awaiting');
   }
-  const lastWorkday = getLastWorkdayDate();
-  const prescriptionDateISO = formatDateISO(lastWorkday);
-  const prescriptionDateDisplay = formatISOToDisplay(prescriptionDateISO);
-  res.render('prescription-form', {
-    errors: [],
-    formData: {},
-    prescriptionDateDisplay
-  });
+  res.render('prescription-form', { errors: [] });
 });
 
 app.post('/prescriptions/new', requireAuth, (req, res) => {
   const {
-    first_name,
-    last_name,
-    street,
-    house_number,
-    zip_code,
-    city,
+    insurance,
+    patient_name,
     patient_birth,
     insurance_number,
     doctor_practice,
     doctor_number,
-    indication,
-    indication_other,
-    previous_cannabis,
-    medication_grams,
-    medication_strain,
-    cost_confirm
+    date,
+    medication1,
+    medication2,
+    medication3
   } = req.body;
-
   const errors = [];
-
-  // Pflichtfelder prüfen
-  if (!first_name || !first_name.trim()) {
-    errors.push({ msg: 'Vorname ist erforderlich.' });
+  if (!insurance || !patient_name || !patient_birth || !doctor_number || !date) {
+    errors.push({ msg: 'Bitte füllen Sie alle Pflichtfelder aus.' });
   }
-  if (!last_name || !last_name.trim()) {
-    errors.push({ msg: 'Nachname ist erforderlich.' });
-  }
-  if (!street || !street.trim()) {
-    errors.push({ msg: 'Straße ist erforderlich.' });
-  }
-  if (!house_number || !house_number.trim()) {
-    errors.push({ msg: 'Hausnummer ist erforderlich.' });
-  }
-  if (!zip_code || !zip_code.trim()) {
-    errors.push({ msg: 'Postleitzahl ist erforderlich.' });
-  }
-  if (!city || !city.trim()) {
-    errors.push({ msg: 'Wohnort ist erforderlich.' });
-  }
-  if (!patient_birth) {
-    errors.push({ msg: 'Geburtsdatum ist erforderlich.' });
-  }
-  if (!indication) {
-    errors.push({ msg: 'Bitte geben Sie den Grund für das Privatrezept an.' });
-  }
-  if (cost_confirm !== 'ja') {
-    errors.push({ msg: 'Bitte bestätigen Sie, dass die Erstellung eines Privatrezepts 10 € kostet und bei Abholung zu bezahlen ist.' });
-  }
-
-  const gramsNumber = normalizeGrams(medication_grams);
-  if (!Number.isFinite(gramsNumber) || gramsNumber <= 0) {
-    errors.push({ msg: 'Bitte geben Sie eine gültige Menge in Gramm ein.' });
-  }
-  if (!medication_strain || !medication_strain.trim()) {
-    errors.push({ msg: 'Bitte geben Sie die Cannabissorte an.' });
-  }
-
-  const lastWorkday = getLastWorkdayDate();
-  const prescriptionDateISO = formatDateISO(lastWorkday);
-
   if (errors.length > 0) {
-    const prescriptionDateDisplay = formatISOToDisplay(prescriptionDateISO);
-    return res.status(400).render('prescription-form', {
-      errors,
-      formData: req.body,
-      prescriptionDateDisplay
-    });
+    return res.render('prescription-form', { errors });
   }
-
-  const insurance = 'Privat';
-  const patient_name = `${last_name.trim()}, ${first_name.trim()} ${street.trim()} ${house_number.trim()} D-${zip_code.trim()} ${city.trim()}`;
-  const prevFlag = previous_cannabis === 'ja' ? 1 : 0;
-  const costConfirmedFlag = cost_confirm === 'ja' ? 1 : 0;
-
-  const gramsText = formatGramsDE(gramsNumber);
-  const strainText = medication_strain.trim();
-
-  const medicationText =
-    `${gramsText}g Cannabisblüten, "${strainText}", ` +
-    `unzerkleinert, verdampfen/inhalieren, ` +
-    `Dosierung: ED 0,01g TD 1,00g`;
-
-  // medication1 erhält den vorbereiteten Text für den Druck;
-  // weitere Zeilen bleiben optional frei.
-  const medication1 = medicationText;
-  const medication2 = null;
-  const medication3 = null;
-
   db.run(
-    `INSERT INTO prescriptions (
-      user_id,
-      insurance,
-      patient_name,
-      patient_birth,
-      insurance_number,
-      doctor_practice,
-      doctor_number,
-      date,
-      medication1,
-      medication2,
-      medication3,
-      street,
-      house_number,
-      zip_code,
-      city,
-      indication,
-      indication_other,
-      previous_cannabis,
-      medication_grams,
-      medication_strain,
-      medication_text,
-      cost_confirmed
-    )
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+    `INSERT INTO prescriptions (user_id, insurance, patient_name, patient_birth, insurance_number, doctor_practice, doctor_number, date, medication1, medication2, medication3)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
     [
       req.session.user.id,
-      insurance,
-      patient_name,
-      patient_birth,
+      insurance.trim(),
+      patient_name.trim(),
+      patient_birth.trim(),
       insurance_number ? insurance_number.trim() : null,
       doctor_practice ? doctor_practice.trim() : null,
-      doctor_number ? doctor_number.trim() : null,
-      prescriptionDateISO,
-      medication1,
-      medication2,
-      medication3,
-      street.trim(),
-      house_number.trim(),
-      zip_code.trim(),
-      city.trim(),
-      indication,
-      indication_other && indication_other.trim() ? indication_other.trim() : null,
-      prevFlag,
-      gramsNumber,
-      strainText,
-      medicationText,
-      costConfirmedFlag
+      doctor_number.trim(),
+      date.trim(),
+      medication1 ? medication1.trim() : null,
+      medication2 ? medication2.trim() : null,
+      medication3 ? medication3.trim() : null
     ],
     function (err) {
       if (err) {
         console.error('Fehler beim Speichern des Rezepts:', err.message);
-        const prescriptionDateDisplay = formatISOToDisplay(prescriptionDateISO);
-        return res.status(500).render('prescription-form', {
-          errors: [{ msg: 'Fehler beim Speichern des Rezepts.' }],
-          formData: req.body,
-          prescriptionDateDisplay
-        });
+        return res.render('prescription-form', { errors: [{ msg: 'Fehler beim Speichern des Rezepts.' }] });
       }
-      // Success: Hinweis-Seite, Admin druckt später das Rezept.
+      // After saving the prescription, do not show it to the user.
+      // Instead, redirect to a success page so that only admins can print the prescription.
       res.redirect('/prescriptions/success');
     }
   );
 });
+
 // Print view for a prescription. Only admins may access this route.
 app.get('/prescriptions/:id/print', requireAdmin, (req, res) => {
   const id = req.params.id;
@@ -1068,14 +867,8 @@ app.get('/prescriptions/:id/print', requireAdmin, (req, res) => {
     if (err || !prescription) {
       return res.status(404).render('404');
     }
-    const dateDisplay = formatISOToDisplay(prescription.date);
-    const birthDisplay = formatISOToDisplay(prescription.patient_birth);
     // Only admin can print prescriptions
-    res.render('prescription-print', {
-      prescription,
-      dateDisplay,
-      birthDisplay
-    });
+    res.render('prescription-print', { prescription });
   });
 });
 
