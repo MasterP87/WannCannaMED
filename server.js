@@ -233,7 +233,6 @@ function extendPrescriptionSchema() {
     });
   });
 }
-ist. This function
 // inserts three predefined strains into the products table along with
 // descriptive metadata and placeholder images. If a product with the same
 // title exists, it will not be duplicated.
